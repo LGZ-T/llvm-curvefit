@@ -1,0 +1,10 @@
+#ifndef LLE_CONFIG_H_H
+#define LLE_CONFIG_H_H
+
+#cmakedefine LLVM_VERSION_MAJOR @LLVM_VERSION_MAJOR@
+#cmakedefine LLVM_VERSION_MINOR @LLVM_VERSION_MINOR@
+#ifndef NO_DEBUG
+#cmakedefine NO_DEBUG
+#endif
+
+#endif
