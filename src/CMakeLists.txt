@@ -20,6 +20,15 @@ target_link_libraries(curve-fit
    ${LLVM_PROF_LIBRARIES}
    )
 
+add_library(MemoryModel SHARED
+   ReuseDistance.cpp
+    )
+
+target_link_libraries(MemoryModel
+	${LLVM_DYNAMIC_LIBRARY}
+	${LLVM_PROF_LIBRARIES}
+	)
+
 if(LLVM_VERSION VERSION_EQUAL "3.4")
    # print Asm code for a bitcode
    add_executable(lle-llc

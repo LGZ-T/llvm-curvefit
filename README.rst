@@ -12,6 +12,11 @@ using llvm's edge profiling and make a curvefit to predict performance model
    and predict x=120, 240 write out to file +120.out and +240.out. 
    the '+' flag is used to switch mode
 
+function not completed
+----------------------
+Add a file which uses balanced binary search tree to get the reuse distance of a memery reference,
+but first it will use ReuseDistance.cpp to insert a function call instruction named getReuseDistance before each load and store in the bitcode.
+
 notebook
 ---------
 
