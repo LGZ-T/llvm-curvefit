@@ -30,9 +30,9 @@ typedef struct bal
 }BALNODE;
 BALNODE root = BALNODE();
 
-map<unlong,map<unlong,unlong> >result;
-map<unlong,unlong> refmap;
-unlong global_counter = 0;
+static map<unlong,map<unlong,unlong> >result;
+static map<unlong,unlong> refmap;
+static unlong global_counter = 0;
 #define DELNODE(child_) \
         BALNODE* father = fa_stack.top();\
         int r_or_l = rorl_stack.top();\
@@ -148,7 +148,7 @@ inline void adjust(BALNODE* node, BALNODE* father, int r_or_l)
     else cout << "wrong in adjust" << endl;
 }
 
-void insert(unlong local_count)
+static void insert(unlong local_count)
 {
     stack<BALNODE*> fa_stack;
     stack<int> rorl_stack;
