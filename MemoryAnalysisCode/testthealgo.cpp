@@ -18,6 +18,19 @@ typedef struct reu
 
 //vector<vector<reuse_data *> *> result;
 
+void process_data(vector<vector<reuse_data*> *> &alldata)
+{
+    //first check the leading bins of each problem size
+    vector<reuse_data*> *temp = alldata[0];
+    unsigned long equal = (*temp)[0]->reuse;  
+    int start = 0;
+    for(int s=0,e=alldata.size();s<e;s++)
+        if((*alldata[s])[0]->reuse!=equal) break;
+
+    if(s==e) start = 1;//all of the leading bins are equal
+    
+
+}
 int main()
 {
     char filename[50];
@@ -32,11 +45,9 @@ int main()
     {
         sum = 0;
         ref = 2104774;
-        //reuse_all.push_back(reuse_all);
         sprintf(filename,"mrd10.10.%d",i);
         in = fopen(filename,"r");
         if(in==NULL) printf("it is null\n");
-        //printf("file:%s\n",filename);
 
         while(1)
         {
