@@ -3,6 +3,7 @@
 #include <fstream>
 #include <string>
 #include <vector>
+#include <list>
 
 using namespace std;
 typedef struct reu
@@ -16,21 +17,63 @@ typedef struct reu
     }
 }reuse_data;
 
-//vector<vector<reuse_data *> *> result;
+typedef struct
+{
+    int start;
+    int end;
+}Range;
 
+
+//the range are not for alldata, they are for the elements of alldata, which is also a vector 
+/*void recurive_process(vector<vector<reuse_data*> &alldata,int start,int end)
 void process_data(vector<vector<reuse_data*> *> &alldata)
 {
     //first check the leading bins of each problem size
     vector<reuse_data*> *temp = alldata[0];
-    unsigned long equal = (*temp)[0]->reuse;  
+    unsigned long equal = (*temp)[0]->reuse;
     int start = 0;
+    vector<Range> range;
+    Range ranget;
+
     for(int s=0,e=alldata.size();s<e;s++)
         if((*alldata[s])[0]->reuse!=equal) break;
 
     if(s==e) start = 1;//all of the leading bins are equal
-    
+
+    for(int i=0,j=alldata.size();i<j;i++)
+    {
+        ranget.start = start;
+        ranget.end = alldata[i]->size()-1;
+        range.push_back(ranget);
+    }
+    recurive_process(alldata,start,alldata.size()-1);
+
+}*/
+
+void process_data(vector<list<reuse_data*> *> &alldata)
+{
+    //first check the leading bins of each problem size
+    list<reuse_data*> *temp = alldata[0];
+    unsigned long equal = temp->front()->reuse;
+    int start = 0;
+    vector<Range> range;
+    Range ranget;
+
+    for(int s=0,e=alldata.size();s<e;s++)
+        if(alldata[s]->front()->reuse!=equal) break;
+
+    if(s==e) start = 1;//all of the leading bins are equal
+
+    for(int i=0,j=alldata.size();i<j;i++)
+    {
+        ranget.start = start;
+        ranget.end = alldata[i]->size()-1;
+        range.push_back(ranget);
+    }
+    recurive_process(alldata,start,alldata.size()-1);
 
 }
+
 int main()
 {
     char filename[50];
