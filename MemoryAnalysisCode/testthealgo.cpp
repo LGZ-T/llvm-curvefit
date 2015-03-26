@@ -1,3 +1,13 @@
+/*
+ * the structure is
+ * PROBLEMSIZE MODULE
+ * O------O-------O
+ * |      |       |
+ * O------O-------O
+ * .      .       .
+ * .      .       .
+ *
+ */
 #include <iostream>
 #include <fstream>
 #include <string>
@@ -18,76 +28,80 @@ typedef struct reu
         reuse = re;
         num = n;
         sum_num = s;
+        next = NULL;
     }
 }reuse_data;
 
 class module
 {
+private: 
     ulong ave_reuse, sum_num;
-    reuse_data *start, *end;
+    reuse_data *start, *end, *first;
     module *left, *right, *up, *down;
 
-    void append(reuse_data *);
+public:
+    module():ave_reuse(0),sum_num(0),start(NULL),end(NULL),
+             first(NULL),left(NULL),right(NULL),up(NULL),down(NULL){}
+
+    ulong get_leading_bin() { return start->reuse; }
+
+    void append(reuse_data * ele)
+    {
+        if(start==NULL)
+        {
+            end = start = ele;
+        }
+        else
+        {
+            end->next = ele;
+            end = end->next;
+        }
+        
+    }
+
+    void change_start()
+    {
+        first = start;
+        start = start->next;
+    }
+
+    double get_ratio()
+    {
+        double midpoint = (end->reuse - start->reuse)/2.0;
+         
+    }
     module * split(double);
 };
 
-/*all of these are old code,i am not sure if they are useful, so, i just keep it. ^_^ just in case.
-typedef struct
+bool check_leading_bin(module *root)
 {
-    int start;
-    int end;
-}Range;
-
-//the range are not for alldata, they are for the elements of alldata, which is also a vector 
-void recurive_process(vector<vector<reuse_data*> &alldata,int start,int end)
-void process_data(vector<vector<reuse_data*> *> &alldata)
-{
-    //first check the leading bins of each problem size
-    vector<reuse_data*> *temp = alldata[0];
-    unsigned long equal = (*temp)[0]->reuse;
-    int start = 0;
-    vector<Range> range;
-    Range ranget;
-
-    for(int s=0,e=alldata.size();s<e;s++)
-        if((*alldata[s])[0]->reuse!=equal) break;
-
-    if(s==e) start = 1;//all of the leading bins are equal
-
-    for(int i=0,j=alldata.size();i<j;i++)
-    {
-        ranget.start = start;
-        ranget.end = alldata[i]->size()-1;
-        range.push_back(ranget);
+    module *temp = root->down;
+    ulong reu = temp->get_leading_bin();
+    while(temp!=NULL)
+    { 
+        if(reu!=temp->get_leading_bin()) return false;
+        temp = temp->down;
     }
-    recurive_process(alldata,start,alldata.size()-1);
 
+    return true;
 }
 
-void process_data(vector<list<reuse_data*> *> &alldata)
+void chang_start(module *root)
 {
-    //first check the leading bins of each problem size
-    list<reuse_data*> *temp = alldata[0];
-    unsigned long equal = temp->front()->reuse;
-    int start = 0;
-    vector<Range> range;
-    Range ranget;
-
-    for(int s=0,e=alldata.size();s<e;s++)
-        if(alldata[s]->front()->reuse!=equal) break;
-
-    if(s==e) start = 1;//all of the leading bins are equal
-
-    for(int i=0,j=alldata.size();i<j;i++)
+    module *temp = root->down;
+    while(temp!=NULL)
     {
-        ranget.start = start;
-        ranget.end = alldata[i]->size()-1;
-        range.push_back(ranget);
+        temp->change_start();
+        temp = temp->down;
     }
-    recurive_process(alldata,start,alldata.size()-1);
+}
 
-}*/
+void split(module *left, module *right)
+{
+    if(left is similar with right) return;
 
+    
+}
 
 int main()
 {
@@ -95,11 +109,8 @@ int main()
     FILE *in;
     unsigned long ref = 2104774, reuse, num, sum;
     long double pos;
-    
-    //a reference's histogram data is stored in reu_for_one_ref
-    //all data of a reference is stored in reu_for_all_ref
-    vector<reuse_data *> *reu_for_one_ref;
-    vector<vector<reuse_data *> *> reu_for_all_ref;
+    module *root = new module();
+    module *pre = root, *cur = NULL;
 
     for(int i=10;i<=30;i++)//there are 30 files
     {
@@ -109,38 +120,23 @@ int main()
         in = fopen(filename,"r");
         if(in==NULL) printf("it is null\n");
         
-        reu_for_one_ref = new vector<reuse_data *>();
+        cur = new module();
+        pre->down = cur;
 
         while(1)
         {
             fscanf(in,"%*10c%lu%*7c%lu%*5c%lu%*c",&ref,&reuse,&num);
             if(ref!=2104774) break;
-            reu_for_one_ref->push_back(new reuse_data(reuse,num));
             sum += num;
+            cur->append(new reuse_data(reuse,num,sum));
         }
-
-        reu_for_all_ref.push_back(reu_for_one_ref);
-
-        //the code below is for printing data which is used by mathematica to draw a 3D pic
-        /*pos = 0;
-        for(int j=0,size=reu_for_one_ref->size();j<size;j++)
-        {
-            reuse_data * temp = (*reu_for_one_ref)[j];
-            cout << i << "\t" << temp->reuse << "\t" << pos << endl;
-            pos += temp->num/(long double)sum;
-            cout << i << "\t" << temp->reuse << "\t" << pos << endl;
-        }*/
-
+        
+        pre = cur;
         fclose(in);
     }
-
-    /*for(int i=0,e=reu_for_all_ref.size();i<e;i++)
-    {
-        reu_for_one_ref = reu_for_all_ref[i];
-        for(int j=0,ej=reu_for_one_ref->size();j<ej;j++)
-        {
-            reuse_data * temp = (*reu_for_one_ref)[j];
-            cout << i+10 << "\t" << temp->reuse << "\t" << temp->num << endl;
-        }
-    }*/
+    
+    if(check_leading_bin(root))
+        change_start(root);
+    
+    split(root);
 }
