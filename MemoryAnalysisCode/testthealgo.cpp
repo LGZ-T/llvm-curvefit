@@ -1,4 +1,3 @@
-#include <stdio.h>
 #include <iostream>
 #include <fstream>
 #include <string>
@@ -6,26 +5,41 @@
 #include <list>
 
 using namespace std;
+typedef unsigned long ulong;
+
 typedef struct reu
 {
-    unsigned long reuse;
-    unsigned long num;
-    reu(unsigned long re, unsigned long n)
+    ulong reuse;
+    ulong num;
+    ulong sum_num;
+    struct reu * next;
+    reu(ulong re, ulong n, ulong s)
     {
         reuse = re;
         num = n;
+        sum_num = s;
     }
 }reuse_data;
 
+class module
+{
+    ulong ave_reuse, sum_num;
+    reuse_data *start, *end;
+    module *left, *right, *up, *down;
+
+    void append(reuse_data *);
+    module * split(double);
+};
+
+/*all of these are old code,i am not sure if they are useful, so, i just keep it. ^_^ just in case.
 typedef struct
 {
     int start;
     int end;
 }Range;
 
-
 //the range are not for alldata, they are for the elements of alldata, which is also a vector 
-/*void recurive_process(vector<vector<reuse_data*> &alldata,int start,int end)
+void recurive_process(vector<vector<reuse_data*> &alldata,int start,int end)
 void process_data(vector<vector<reuse_data*> *> &alldata)
 {
     //first check the leading bins of each problem size
@@ -48,7 +62,7 @@ void process_data(vector<vector<reuse_data*> *> &alldata)
     }
     recurive_process(alldata,start,alldata.size()-1);
 
-}*/
+}
 
 void process_data(vector<list<reuse_data*> *> &alldata)
 {
@@ -72,44 +86,61 @@ void process_data(vector<list<reuse_data*> *> &alldata)
     }
     recurive_process(alldata,start,alldata.size()-1);
 
-}
+}*/
+
 
 int main()
 {
     char filename[50];
-    //ifstream in;
     FILE *in;
-    //string s("reference:2104774");
     unsigned long ref = 2104774, reuse, num, sum;
     long double pos;
-    vector<reuse_data *> reuse_all;
+    
+    //a reference's histogram data is stored in reu_for_one_ref
+    //all data of a reference is stored in reu_for_all_ref
+    vector<reuse_data *> *reu_for_one_ref;
+    vector<vector<reuse_data *> *> reu_for_all_ref;
 
-    for(int i=10;i<=30;i++)
+    for(int i=10;i<=30;i++)//there are 30 files
     {
         sum = 0;
         ref = 2104774;
         sprintf(filename,"mrd10.10.%d",i);
         in = fopen(filename,"r");
         if(in==NULL) printf("it is null\n");
+        
+        reu_for_one_ref = new vector<reuse_data *>();
 
         while(1)
         {
             fscanf(in,"%*10c%lu%*7c%lu%*5c%lu%*c",&ref,&reuse,&num);
             if(ref!=2104774) break;
-            //printf("%d\t%lu\t%lu\n",i,reuse,num);
-            reuse_all.push_back(new reuse_data(reuse,num));
+            reu_for_one_ref->push_back(new reuse_data(reuse,num));
             sum += num;
         }
-        pos = 0;
-        for(int j=0,size=reuse_all.size();j<size;j++)
+
+        reu_for_all_ref.push_back(reu_for_one_ref);
+
+        //the code below is for printing data which is used by mathematica to draw a 3D pic
+        /*pos = 0;
+        for(int j=0,size=reu_for_one_ref->size();j<size;j++)
         {
-            reuse_data * temp = reuse_all[j];
+            reuse_data * temp = (*reu_for_one_ref)[j];
             cout << i << "\t" << temp->reuse << "\t" << pos << endl;
             pos += temp->num/(long double)sum;
             cout << i << "\t" << temp->reuse << "\t" << pos << endl;
-            delete temp;
-        }
-        reuse_all.clear();
+        }*/
+
         fclose(in);
     }
+
+    /*for(int i=0,e=reu_for_all_ref.size();i<e;i++)
+    {
+        reu_for_one_ref = reu_for_all_ref[i];
+        for(int j=0,ej=reu_for_one_ref->size();j<ej;j++)
+        {
+            reuse_data * temp = (*reu_for_one_ref)[j];
+            cout << i+10 << "\t" << temp->reuse << "\t" << temp->num << endl;
+        }
+    }*/
 }
