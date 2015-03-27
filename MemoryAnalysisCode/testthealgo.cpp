@@ -36,13 +36,13 @@ typedef struct reu
 class module
 {
 private: 
-    ulong ave_reuse, sum_num;
+    ulong ave_reuse;
     reuse_data *start, *end, *first;
     module *left, *right, *up, *down;
 
 public:
-    module():ave_reuse(0),sum_num(0),start(NULL),end(NULL),
-             first(NULL),left(NULL),right(NULL),up(NULL),down(NULL){}
+    module():ave_reuse(0),start(NULL),end(NULL),first(NULL),
+             left(NULL),right(NULL),up(NULL),down(NULL){}
 
     ulong get_leading_bin() { return start->reuse; }
 
@@ -92,7 +92,22 @@ public:
     }
     
     //wait
-    module * split(double);
+    module * split(double ratio)
+    {
+        ulong diff = first==NULL?0:first->num;
+        ulong leftnum = (1/(1/ratio+1))*(end->sum_num-diff);
+        ulong curnum = 0;
+        reuse_data *ite = start, *preite = start;
+        while(ite!=NULL)
+        {
+            if((ite->sum_num-diff)>leftnum)
+            {
+                ulong curleft = ite->num-(ite->sum_num-diff-leftnum);
+                reuse_data *temp = new reuse_data(ite->reuse,curleft,curleft+leftnum+diff);
+
+            }
+        }
+    }
 };
 
 //done
@@ -141,7 +156,7 @@ void split(module *root)
     sort(allratio.begin(),allratio.end(),comp);
     size = allratio.size();
     finalratio = (allratio[size/2]+allratio[(size-1)/2])/2;
-    
+        
 }
 
 //wait
