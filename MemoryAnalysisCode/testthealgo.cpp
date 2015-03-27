@@ -13,6 +13,7 @@
 #include <string>
 #include <vector>
 #include <list>
+#include <algorithm>
 
 using namespace std;
 typedef unsigned long ulong;
@@ -45,6 +46,7 @@ public:
 
     ulong get_leading_bin() { return start->reuse; }
 
+    //done
     void append(reuse_data * ele)
     {
         if(start==NULL)
@@ -56,23 +58,44 @@ public:
             end->next = ele;
             end = end->next;
         }
-        
     }
 
+    //done
     void change_start()
     {
         first = start;
         start = start->next;
     }
-
+    
+    //done
     double get_ratio()
     {
         double midpoint = (end->reuse - start->reuse)/2.0;
-         
+        double lessnum = 0;
+        double sumnum = first==NULL?end->sum_num:end->sum_num-first->num;
+
+        reuse_data * temp = start;
+        while(temp!=NULL)
+        {
+            if(temp->reuse-midpoint < 0.01 && temp->reuse-midpoint > -0.01)//they are equal
+            {
+                lessnum += temp->num/2.0;
+                break;
+            }
+            else if(temp->reuse < midpoint) lessnum += temp->num;
+            else if(temp->reuse > midpoint) break;
+            
+            temp = temp->next;
+        }
+
+        return lessnum/(sumnum-lessnum);
     }
+    
+    //wait
     module * split(double);
 };
 
+//done
 bool check_leading_bin(module *root)
 {
     module *temp = root->down;
@@ -86,6 +109,7 @@ bool check_leading_bin(module *root)
     return true;
 }
 
+//done
 void chang_start(module *root)
 {
     module *temp = root->down;
@@ -96,13 +120,31 @@ void chang_start(module *root)
     }
 }
 
-void split(module *left, module *right)
+bool comp(double a, double b)
 {
-    if(left is similar with right) return;
+    return a < b;
+}
 
+//wait
+void split(module *root)
+{
+    int pos = 0, size;
+    double finalration;
+    vector<double> allratio;
+    module *temp = root;
+    while(temp!=NULL)
+    {
+        allratio.push_back(temp->get_ratio());
+        temp = temp->down;
+    }
+    
+    sort(allratio.begin(),allratio.end(),comp);
+    size = allratio.size();
+    finalratio = (allratio[size/2]+allratio[(size-1)/2])/2;
     
 }
 
+//wait
 int main()
 {
     char filename[50];
