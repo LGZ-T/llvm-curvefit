@@ -31,23 +31,40 @@ typedef struct reu
         sum_num = s;
         next = NULL;
     }
-}reuse_data;
+}ReuseData;
 
-class module
+class ReuseContainer
 {
 private: 
-    ulong ave_reuse;
-    reuse_data *start, *end, *first;
-    module *left, *right, *up, *down;
+    ulong ave_reuse, diff;
+    ReuseData *start, *end, *first;
+    ReuseContainer *left, *right, *up, *down;
 
 public:
-    module():ave_reuse(0),start(NULL),end(NULL),first(NULL),
-             left(NULL),right(NULL),up(NULL),down(NULL){}
+    ReuseContainer():
+           ave_reuse(0),start(NULL),end(NULL),first(NULL),
+           left(NULL),right(NULL),up(NULL),down(NULL),diff(0) {}
 
+    ReuseContainer(ReuseData *s,ReuseData *e,ulong d):
+           ave_reuse(0),start(s),end(e),first(NULL),left(NULL),
+           right(NULL),up(NULL),down(NULL),diff(d) {}
+
+    //done
     ulong get_leading_bin() { return start->reuse; }
 
     //done
-    void append(reuse_data * ele)
+    void setStart(ReuseData * s) { start = s; }
+    void setEnd(ReuseData *e) { end = e; }
+    void setAround(ReuseContainer *l,ReuseContainer *r,ReuseContainer *u,ReuseContainer *d)
+    {
+        left = l;
+        right = r;
+        up = u;
+        down = d;
+    }
+
+    //done
+    void append(ReuseData * ele)
     {
         if(start==NULL)
         {
@@ -74,7 +91,7 @@ public:
         double lessnum = 0;
         double sumnum = first==NULL?end->sum_num:end->sum_num-first->num;
 
-        reuse_data * temp = start;
+        ReuseData * temp = start;
         while(temp!=NULL)
         {
             if(temp->reuse-midpoint < 0.01 && temp->reuse-midpoint > -0.01)//they are equal
@@ -92,28 +109,45 @@ public:
     }
     
     //wait
-    module * split(double ratio)
+    ReuseContainer * split(double ratio)
     {
-        ulong diff = first==NULL?0:first->num;
+        diff += (first==NULL?0:first->num);
         ulong leftnum = (1/(1/ratio+1))*(end->sum_num-diff);
-        ulong curnum = 0;
-        reuse_data *ite = start, *preite = start;
+        ReuseData *ite = start, *preite = start;
+        ReuseContainer * rReuseContainer = NULL;
+
         while(ite!=NULL)
         {
             if((ite->sum_num-diff)>leftnum)
             {
                 ulong curleft = ite->num-(ite->sum_num-diff-leftnum);
-                reuse_data *temp = new reuse_data(ite->reuse,curleft,curleft+leftnum+diff);
-
+                preite->next = new ReuseData(ite->reuse,curleft,leftnum+diff);
+                ite->num -= curleft;
+                ite->sum_num = ite->num;
+                
+                rReuseContainer = new ReuseContainer(ite,end,leftnum+diff);
+                end = preite->next;
+                break;
             }
+            else if((ite->sum_num-diff)==leftnum)
+            {
+                rReuseContainer = new ReuseContainer(ite->next,end,ite->sum_num);
+                ite->next = NULL;
+                end = ite;
+                break;
+            }
+
+            preite = ite;
+            ite = ite->next;
         }
+        return rReuseContainer;
     }
 };
 
 //done
-bool check_leading_bin(module *root)
+bool check_leading_bin(ReuseContainer *root)
 {
-    module *temp = root->down;
+    ReuseContainer *temp = root->down;
     ulong reu = temp->get_leading_bin();
     while(temp!=NULL)
     { 
@@ -125,9 +159,9 @@ bool check_leading_bin(module *root)
 }
 
 //done
-void chang_start(module *root)
+void chang_start(ReuseContainer *root)
 {
-    module *temp = root->down;
+    ReuseContainer *temp = root->down;
     while(temp!=NULL)
     {
         temp->change_start();
@@ -141,12 +175,12 @@ bool comp(double a, double b)
 }
 
 //wait
-void split(module *root)
+void split(ReuseContainer *root)
 {
     int pos = 0, size;
     double finalration;
     vector<double> allratio;
-    module *temp = root;
+    ReuseContainer *temp = root;
     while(temp!=NULL)
     {
         allratio.push_back(temp->get_ratio());
@@ -166,8 +200,8 @@ int main()
     FILE *in;
     unsigned long ref = 2104774, reuse, num, sum;
     long double pos;
-    module *root = new module();
-    module *pre = root, *cur = NULL;
+    ReuseContainer *root = new ReuseContainer();
+    ReuseContainer *pre = root, *cur = NULL;
 
     for(int i=10;i<=30;i++)//there are 30 files
     {
@@ -177,7 +211,7 @@ int main()
         in = fopen(filename,"r");
         if(in==NULL) printf("it is null\n");
         
-        cur = new module();
+        cur = new ReuseContainer();
         pre->down = cur;
 
         while(1)
@@ -185,7 +219,7 @@ int main()
             fscanf(in,"%*10c%lu%*7c%lu%*5c%lu%*c",&ref,&reuse,&num);
             if(ref!=2104774) break;
             sum += num;
-            cur->append(new reuse_data(reuse,num,sum));
+            cur->append(new ReuseData(reuse,num,sum));
         }
         
         pre = cur;
