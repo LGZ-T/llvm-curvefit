@@ -26,3 +26,8 @@
 *.exe
 *.out
 *.app
+
+#i don't want 
+tags
+mrd*
+build/

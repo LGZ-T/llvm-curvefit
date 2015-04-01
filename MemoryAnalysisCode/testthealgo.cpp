@@ -62,6 +62,8 @@ public:
         up = u;
         down = d;
     }
+    //wait
+    ulong get_ave_reuse(){}
 
     //done
     void append(ReuseData * ele)
@@ -175,12 +177,17 @@ bool comp(double a, double b)
 }
 
 //wait
+/*how to judje if two modules are similiar
+ * 1. if the module has only one reuse distance
+ * 2. if the averge reuse distances of two modules have one(two,three,.....i don't know) difference
+ */
 void split(ReuseContainer *root)
 {
+    bool isContinue = true,lContinue = true,rContinue = true;
     int pos = 0, size;
     double finalration;
     vector<double> allratio;
-    ReuseContainer *temp = root;
+    ReuseContainer *temp = root, *right=NULL,*splitup=NULL;
     while(temp!=NULL)
     {
         allratio.push_back(temp->get_ratio());
@@ -190,7 +197,30 @@ void split(ReuseContainer *root)
     sort(allratio.begin(),allratio.end(),comp);
     size = allratio.size();
     finalratio = (allratio[size/2]+allratio[(size-1)/2])/2;
+    temp = root;
+    while(temp!=NULL)
+    {
+        right = temp->split(finalratio);
+        if(splitup!=NULL) splitup->down = right;
+        right->right = temp->right;
+        temp->right = right;
+        splitup = right;
+
+        ulong diffreuse = temp->get_ave_reuse()-right->get_ave_reuse();
+        if(diffreuse < 10 && diffreuse > -10) isContinue = false;
+        if(temp->start==temp->end)            lContinue  = false;
+        if(right->start==right->end)          rContinue  = false;
         
+        temp = temp->down;
+    }
+    
+    right = root->right;
+    if(isContinue==false) return;
+    if(lContinue==false && rContinue==false) return;
+    if(lContinue==false) split(right);
+    else if(rContinue==false) split(root);
+    else { split(root); split(right); }
+    
 }
 
 //wait
