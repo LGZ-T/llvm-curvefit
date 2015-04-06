@@ -36,18 +36,20 @@ typedef struct reu
 class ReuseContainer
 {
 private: 
-    ulong ave_reuse, diff;
-    ReuseData *start, *end, *first;
-    ReuseContainer *left, *right, *up, *down;
+    ulong ave_reuse, diff;//when should diff be changed????
+    ReuseData *first;
+    ReuseContainer *left, *up;
 
 public:
+    ReuseData *start, *end;
+    ReuseContainer *down, *right;
     ReuseContainer():
-           ave_reuse(0),start(NULL),end(NULL),first(NULL),
-           left(NULL),right(NULL),up(NULL),down(NULL),diff(0) {}
+           ave_reuse(0),diff(0),first(NULL),left(NULL),up(NULL),
+           start(NULL),end(NULL),down(NULL),right(NULL) {}
 
     ReuseContainer(ReuseData *s,ReuseData *e,ulong d):
-           ave_reuse(0),start(s),end(e),first(NULL),left(NULL),
-           right(NULL),up(NULL),down(NULL),diff(d) {}
+           ave_reuse(0),diff(d),first(NULL),left(NULL),up(NULL),
+           start(s),end(e),down(NULL),right(NULL){}
 
     //done
     ulong get_leading_bin() { return start->reuse; }
@@ -63,9 +65,9 @@ public:
         down = d;
     }
     //wait
-    ulong get_ave_reuse(){}
+    ulong get_ave_reuse(){return 0;}
 
-    //done
+    //done. append is only be used when reading files
     void append(ReuseData * ele)
     {
         if(start==NULL)
@@ -79,11 +81,13 @@ public:
         }
     }
 
-    //done
+    //done this is only be used when all of the leading bins are the same
+    //this func should change diff, is it right?
     void change_start()
     {
         first = start;
         start = start->next;
+        diff += first->num;
     }
     
     //done
@@ -91,7 +95,7 @@ public:
     {
         double midpoint = (end->reuse - start->reuse)/2.0;
         double lessnum = 0;
-        double sumnum = first==NULL?end->sum_num:end->sum_num-first->num;
+        double sumnum = end->sum_num-diff;
 
         ReuseData * temp = start;
         while(temp!=NULL)
@@ -110,10 +114,10 @@ public:
         return lessnum/(sumnum-lessnum);
     }
     
-    //wait
+    //i think it is done, but wait
     ReuseContainer * split(double ratio)
     {
-        diff += (first==NULL?0:first->num);
+        //diff += (first==NULL?0:first->num);
         ulong leftnum = (1/(1/ratio+1))*(end->sum_num-diff);
         ReuseData *ite = start, *preite = start;
         ReuseContainer * rReuseContainer = NULL;
@@ -142,7 +146,7 @@ public:
             preite = ite;
             ite = ite->next;
         }
-        return ReuseContainer;
+        return rReuseContainer;
     }
 };
 
@@ -150,6 +154,7 @@ public:
 bool check_leading_bin(ReuseContainer *root)
 {
     ReuseContainer *temp = root->down;
+    if(temp==NULL) printf("it is empty\n");
     ulong reu = temp->get_leading_bin();
     while(temp!=NULL)
     { 
@@ -161,14 +166,16 @@ bool check_leading_bin(ReuseContainer *root)
 }
 
 //done
-void chang_start(ReuseContainer *root)
+void change_start(ReuseContainer *root)
 {
     ReuseContainer *temp = root->down;
+    printf("i was in change_start\n");
     while(temp!=NULL)
     {
         temp->change_start();
         temp = temp->down;
     }
+    printf("i was after change_start\n");
 }
 
 bool comp(double a, double b)
@@ -184,8 +191,8 @@ bool comp(double a, double b)
 void split(ReuseContainer *root)
 {
     bool isContinue = true,lContinue = true,rContinue = true;
-    int pos = 0, size;
-    double finalration;
+    int size;
+    double finalratio;
     vector<double> allratio;
     ReuseContainer *temp = root, *right=NULL,*splitup=NULL;
     while(temp!=NULL)
@@ -220,7 +227,6 @@ void split(ReuseContainer *root)
     if(lContinue==false) split(right);
     else if(rContinue==false) split(root);
     else { split(root); split(right); }
-    
 }
 
 //wait
@@ -229,7 +235,6 @@ int main()
     char filename[50];
     FILE *in;
     unsigned long ref = 2104774, reuse, num, sum;
-    long double pos;
     ReuseContainer *root = new ReuseContainer();
     ReuseContainer *pre = root, *cur = NULL;
 
@@ -255,9 +260,13 @@ int main()
         pre = cur;
         fclose(in);
     }
-    
-    if(check_leading_bin(root))
+    printf("WORLD\n");
+    bool result = check_leading_bin(root);
+    if(result)
+    {
         change_start(root);
-    
-    split(root);
+        printf("in the if after change_start\n");
+    }
+    printf("Hello\n");
+    split(root->down);
 }
