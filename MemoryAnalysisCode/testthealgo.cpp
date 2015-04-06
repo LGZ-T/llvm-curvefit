@@ -118,12 +118,14 @@ public:
     ReuseContainer * split(double ratio)
     {
         //diff += (first==NULL?0:first->num);
+        //cout << "ration is = " << ratio << endl;
         ulong leftnum = (1/(1/ratio+1))*(end->sum_num-diff);
         ReuseData *ite = start, *preite = start;
         ReuseContainer * rReuseContainer = NULL;
 
         while(ite!=NULL)
         {
+            //printf("ite->sum_num-diff=%lu,leftnum=%lu\n",ite->sum_num-diff,leftnum);
             if((ite->sum_num-diff)>leftnum)
             {
                 ulong curleft = ite->num-(ite->sum_num-diff-leftnum);
@@ -191,10 +193,9 @@ bool comp(double a, double b)
 void split(ReuseContainer *root)
 {
     bool isContinue = true,lContinue = true,rContinue = true;
-    int size;
-    double finalratio;
     vector<double> allratio;
     ReuseContainer *temp = root, *right=NULL,*splitup=NULL;
+
     while(temp!=NULL)
     {
         allratio.push_back(temp->get_ratio());
@@ -202,9 +203,10 @@ void split(ReuseContainer *root)
     }
     
     sort(allratio.begin(),allratio.end(),comp);
-    size = allratio.size();
-    finalratio = (allratio[size/2]+allratio[(size-1)/2])/2;
+    int size = allratio.size();
+    double finalratio = (allratio[size/2]+allratio[(size-1)/2])/2;
     temp = root;
+    cout << "final ration is " << finalratio << endl;
     while(temp!=NULL)
     {
         right = temp->split(finalratio);
