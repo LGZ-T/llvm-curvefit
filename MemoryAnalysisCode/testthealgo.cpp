@@ -55,7 +55,7 @@ public:
     ulong get_leading_bin() { return start->reuse; }
 
     //done
-    void setStart(ReuseData * s) { start = s; }
+    /*void setStart(ReuseData * s) { start = s; }
     void setEnd(ReuseData *e) { end = e; }
     void setAround(ReuseContainer *l,ReuseContainer *r,ReuseContainer *u,ReuseContainer *d)
     {
@@ -63,9 +63,20 @@ public:
         right = r;
         up = u;
         down = d;
+    }*/
+
+    //wait, ave_reuse doesnt need to be a func, every time when i change the
+    //ReuseContainer, i will change the ave_reuse.
+    ulong get_ave_reuse()
+    {
+        ulong allnum = end->sum_num - diff;
+        ReuseData *temp = start;
+        while(temp!=NULL)
+        {
+            
+        }
+        return 0;
     }
-    //wait
-    ulong get_ave_reuse(){return 0;}
 
     //done. append is only be used when reading files
     void append(ReuseData * ele)
@@ -225,7 +236,9 @@ void split(ReuseContainer *root)
     
     right = root->right;
     if(isContinue==false) return;
+
     if(lContinue==false && rContinue==false) return;
+
     if(lContinue==false) split(right);
     else if(rContinue==false) split(root);
     else { split(root); split(right); }
