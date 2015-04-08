@@ -1,0 +1,2 @@
+/home/lgz/Documents/project/llvm-curvefit/build/src/CMakeFiles/MemoryModel.dir
+/home/lgz/Documents/project/llvm-curvefit/build/src/CMakeFiles/curve-fit.dir
