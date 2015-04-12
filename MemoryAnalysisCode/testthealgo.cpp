@@ -14,6 +14,8 @@
 #include <vector>
 #include <list>
 #include <algorithm>
+#include <iomanip>
+#include <sstream>
 
 using namespace std;
 typedef unsigned long ulong;
@@ -32,23 +34,22 @@ typedef struct reu
         next = NULL;
     }
 }ReuseData;
-
+class ReuseContainer;
+void print_split(ReuseContainer *left, ReuseContainer *right);
 class ReuseContainer
 {
 private: 
     ulong ave_reuse, diff;//when should diff be changed????
-    ReuseData *first;
-    ReuseContainer *left, *up;
 
 public:
-    ReuseData *start, *end;
+    ReuseData *first, *start, *end;
     ReuseContainer *down, *right;
     ReuseContainer():
-           ave_reuse(0),diff(0),first(NULL),left(NULL),up(NULL),
+           ave_reuse(0),diff(0),first(NULL),
            start(NULL),end(NULL),down(NULL),right(NULL) {}
 
     ReuseContainer(ReuseData *s,ReuseData *e,ulong d):
-           ave_reuse(0),diff(d),first(NULL),left(NULL),up(NULL),
+           ave_reuse(0),diff(d),first(NULL),
            start(s),end(e),down(NULL),right(NULL){}
 
     //done
@@ -66,16 +67,21 @@ public:
     }*/
 
     //wait, ave_reuse doesnt need to be a func, every time when i change the
-    //ReuseContainer, i will change the ave_reuse.
-    ulong get_ave_reuse()
+    //ReuseContainer, i will change the ave_reuse, and, this func will be called only once.
+    //what i should know is when to change ave_reuse,that means, which func can change
+    //ave_reuse.this func will be changed later.
+    double get_ave_reuse()
     {
-        ulong allnum = end->sum_num - diff;
+        double allnum = end->sum_num - diff, ave=0;
         ReuseData *temp = start;
         while(temp!=NULL)
         {
-            
+            ave += (temp->num/allnum)*temp->reuse;
+            temp = temp->next;
         }
-        return 0;
+        ave_reuse = ave;
+        //return ave_reuse;
+        return ave;
     }
 
     //done. append is only be used when reading files
@@ -104,10 +110,11 @@ public:
     //done
     double get_ratio()
     {
-        double midpoint = (end->reuse - start->reuse)/2.0;
+        double midpoint = (end->reuse + start->reuse)/2.0;
         double lessnum = 0;
         double sumnum = end->sum_num-diff;
-
+        //cout << "when get ration: max reuse is:" << end->reuse << "##" << "min reuse is:" 
+         //    << start->reuse << "##midpoint is:" << midpoint << "##sumnum is:" << sumnum << "##";
         ReuseData * temp = start;
         while(temp!=NULL)
         {
@@ -133,16 +140,24 @@ public:
         ulong leftnum = (1/(1/ratio+1))*(end->sum_num-diff);
         ReuseData *ite = start, *preite = start;
         ReuseContainer * rReuseContainer = NULL;
-
+        //ReuseData *temp = start;
+        /*cout << "before split ###";
+        while(temp!=NULL)
+        {
+            cout << "[" << temp->reuse << ":" << temp->num << "]\t";
+            temp = temp->next;
+        }
+        cout << endl;*/
         while(ite!=NULL)
         {
-            //printf("ite->sum_num-diff=%lu,leftnum=%lu\n",ite->sum_num-diff,leftnum);
             if((ite->sum_num-diff)>leftnum)
             {
+                //cout << "ite->sum_num is:" << ite->sum_num << "\tdiff is:"<< diff << "\tite->num is:"<<ite->num 
+                 //    << "\tleftnum is:" << leftnum << "\treuse is:" << ite->reuse << endl;
                 ulong curleft = ite->num-(ite->sum_num-diff-leftnum);
                 preite->next = new ReuseData(ite->reuse,curleft,leftnum+diff);
                 ite->num -= curleft;
-                ite->sum_num = ite->num;
+                //ite->sum_num = ite->num;ite->sum_num do not need to be changed
                 
                 rReuseContainer = new ReuseContainer(ite,end,leftnum+diff);
                 end = preite->next;
@@ -159,6 +174,9 @@ public:
             preite = ite;
             ite = ite->next;
         }
+        //cout << "after split ###";
+        //print_split(this,rReuseContainer);
+        //cout << endl;
         return rReuseContainer;
     }
 };
@@ -196,6 +214,24 @@ bool comp(double a, double b)
     return a < b;
 }
 
+void print_split(ReuseContainer *left, ReuseContainer *right, int i)
+{   
+    ReuseData *temp = left->start;
+    cout << i << "\t";
+    while(temp!=NULL)
+    {
+        cout << "[" << temp->reuse << ":" << temp->num << "]\t";
+        temp = temp->next;
+    }
+    temp = right->start;
+    cout << "####";
+    while(temp!=NULL)
+    {
+        cout << "[" << temp->reuse << ":" << temp->num << "]\t";
+        temp = temp->next;
+    }
+    cout << endl;
+}
 //wait
 /*how to judje if two modules are similiar
  * 1. if the module has only one reuse distance
@@ -206,18 +242,22 @@ void split(ReuseContainer *root)
     bool isContinue = true,lContinue = true,rContinue = true;
     vector<double> allratio;
     ReuseContainer *temp = root, *right=NULL,*splitup=NULL;
-
+    //cout << "split ratios are: ";
     while(temp!=NULL)
     {
         allratio.push_back(temp->get_ratio());
+        //cout << allratio.back() << endl;
         temp = temp->down;
     }
+    //cout << endl;
     
     sort(allratio.begin(),allratio.end(),comp);
     int size = allratio.size();
     double finalratio = (allratio[size/2]+allratio[(size-1)/2])/2;
+    if(finalratio<0.0001 && finalratio>-0.0001) return;
     temp = root;
-    cout << "final ration is " << finalratio << endl;
+    //cout << "final ration is " << finalratio << endl;
+    int i = 10;
     while(temp!=NULL)
     {
         right = temp->split(finalratio);
@@ -225,7 +265,7 @@ void split(ReuseContainer *root)
         right->right = temp->right;
         temp->right = right;
         splitup = right;
-
+        print_split(temp,right,i++);
         ulong diffreuse = temp->get_ave_reuse()-right->get_ave_reuse();
         if(diffreuse < 10 && diffreuse > -10) isContinue = false;
         if(temp->start==temp->end)            lContinue  = false;
@@ -233,7 +273,7 @@ void split(ReuseContainer *root)
         
         temp = temp->down;
     }
-    
+    cout << "\n$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$\t\n" << endl;
     right = root->right;
     if(isContinue==false) return;
 
@@ -242,6 +282,58 @@ void split(ReuseContainer *root)
     if(lContinue==false) split(right);
     else if(rContinue==false) split(root);
     else { split(root); split(right); }
+}
+
+void print_data(ReuseContainer *root)
+{
+    ReuseContainer *temp = root->down, *tempj;
+    int i=10;
+    while(temp!=NULL)
+    {
+        cout << i << "\t";
+        if(temp->first!=NULL)
+        {
+            cout <<  "[" << temp->first->reuse << ":"
+                 << temp->first->num << "]" << "\t";
+        }
+        tempj = temp;
+        while(tempj!=NULL)
+        {
+
+            ostringstream ostr;
+            ostr << "[" << tempj->get_ave_reuse() << ":" 
+                 << tempj->end->sum_num-tempj->start->sum_num + tempj->start->num << "]";
+            cout << left;
+            cout << setw(13) << ostr.str();
+            ostr.clear();
+            //cout << "[" << tempj->get_ave_reuse() << ":" 
+             //    << tempj->end->sum_num-tempj->start->sum_num + tempj->start->num << "]" << "\t\t";
+            tempj = tempj->right;
+        }
+        cout << endl;
+        temp = temp->down;
+        i++;
+    }
+}
+
+void print_origin(ReuseContainer *root)
+{
+    ReuseContainer *temp = root->down;
+    ReuseData *tempj = NULL;
+    int i = 10;
+    while(temp!=NULL)
+    {
+        cout << i << "\t";
+        tempj = temp->start;
+        while(tempj!=NULL)
+        {
+            cout << "[" << tempj->reuse << ":" << tempj->num << "] ";
+            tempj = tempj->next;
+        }
+        cout << endl;
+        i++;
+        temp = temp->down;
+    }
 }
 
 //wait
@@ -275,13 +367,13 @@ int main()
         pre = cur;
         fclose(in);
     }
-    printf("WORLD\n");
+    //print_origin(root);
     bool result = check_leading_bin(root);
     if(result)
     {
         change_start(root);
-        printf("in the if after change_start\n");
     }
-    printf("Hello\n");
     split(root->down);
+    cout << "#################################################################" << endl;
+    print_data(root);
 }
