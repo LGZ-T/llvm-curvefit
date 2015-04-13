@@ -74,11 +74,14 @@ public:
     {
         double allnum = end->sum_num - diff, ave=0;
         ReuseData *temp = start;
+        //cout << "{(sum:" << end->sum_num <<"diff:" << diff <<")";
         while(temp!=NULL)
         {
+            //cout << "(" << temp->reuse << ":" << temp->num << ")";
             ave += (temp->num/allnum)*temp->reuse;
             temp = temp->next;
         }
+        //cout << "}";
         ave_reuse = ave;
         //return ave_reuse;
         return ave;
@@ -217,10 +220,10 @@ bool comp(double a, double b)
 void print_split(ReuseContainer *left, ReuseContainer *right, int i)
 {   
     ReuseData *temp = left->start;
-    cout << i << "\t";
+    //cout << i << "\t";
     while(temp!=NULL)
     {
-        cout << "[" << temp->reuse << ":" << temp->num << "]\t";
+     //   cout << "[" << temp->reuse << ":" << temp->num << "]\t";
         temp = temp->next;
     }
     temp = right->start;
@@ -257,7 +260,7 @@ void split(ReuseContainer *root)
     if(finalratio<0.0001 && finalratio>-0.0001) return;
     temp = root;
     //cout << "final ration is " << finalratio << endl;
-    int i = 10;
+    //int i = 10;
     while(temp!=NULL)
     {
         right = temp->split(finalratio);
@@ -265,15 +268,15 @@ void split(ReuseContainer *root)
         right->right = temp->right;
         temp->right = right;
         splitup = right;
-        print_split(temp,right,i++);
-        ulong diffreuse = temp->get_ave_reuse()-right->get_ave_reuse();
-        if(diffreuse < 10 && diffreuse > -10) isContinue = false;
+        //print_split(temp,right,i++);
+        long diffreuse = temp->get_ave_reuse()-right->get_ave_reuse();
+        if(diffreuse < 2 && diffreuse > -2) isContinue = false;
         if(temp->start==temp->end)            lContinue  = false;
         if(right->start==right->end)          rContinue  = false;
         
         temp = temp->down;
     }
-    cout << "\n$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$\t\n" << endl;
+    //cout << "\n$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$\t\n" << endl;
     right = root->right;
     if(isContinue==false) return;
 
@@ -294,20 +297,21 @@ void print_data(ReuseContainer *root)
         if(temp->first!=NULL)
         {
             cout <<  "[" << temp->first->reuse << ":"
-                 << temp->first->num << "]" << "\t";
+                 << temp->first->num << "]" << "###";
         }
         tempj = temp;
         while(tempj!=NULL)
         {
-
-            ostringstream ostr;
-            ostr << "[" << tempj->get_ave_reuse() << ":" 
-                 << tempj->end->sum_num-tempj->start->sum_num + tempj->start->num << "]";
-            cout << left;
-            cout << setw(13) << ostr.str();
-            ostr.clear();
-            //cout << "[" << tempj->get_ave_reuse() << ":" 
-             //    << tempj->end->sum_num-tempj->start->sum_num + tempj->start->num << "]" << "\t\t";
+            cout << "[" << tempj->get_ave_reuse() << ":" 
+                 << tempj->end->sum_num-tempj->start->sum_num + tempj->start->num << "]\t";
+            //ReuseData *tempi = tempj->start;
+            //cout << "{";
+            //while(tempi!=NULL)
+            //{
+            //    cout << "[" << tempi->reuse << ":" << tempi->num << "]";
+            //    tempi = tempi->next;
+            //}
+            //cout << "###";
             tempj = tempj->right;
         }
         cout << endl;
@@ -367,7 +371,7 @@ int main()
         pre = cur;
         fclose(in);
     }
-    //print_origin(root);
+    print_origin(root);
     bool result = check_leading_bin(root);
     if(result)
     {
