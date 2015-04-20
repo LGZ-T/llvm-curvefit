@@ -314,7 +314,7 @@ long double cal_squaresum(gsl_vector *dif, int n, int fordebug)
 }	
 
 //x and y_data should be set correctly befoe calling fit
-int fit(vector<unsigned> *x, long double *y_data, int num)
+void fit(vector<unsigned> *x, long double *y_data, int num,struct best_fit &result)
 {
     x_data = x;
     //unsigned X_NUM = num;
@@ -324,7 +324,7 @@ int fit(vector<unsigned> *x, long double *y_data, int num)
 	double para_init[PARA_MAX] = {1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0};
 	const gsl_multifit_fdfsolver_type *T;
 	long double pre_best_squsum, cur_squsum;
-    struct best_fit bestfit;
+    //struct best_fit bestfit;
     //y_data = new long double[X_NUM];
 	struct data d;
 	gsl_multifit_fdfsolver *s;
@@ -370,24 +370,24 @@ int fit(vector<unsigned> *x, long double *y_data, int num)
         dif = s->f;//xiehuc: s->f = f(x) - y[i], where y[i] is real data, and f(x) is guess data.
         cur_squsum = cal_squaresum(dif, n, j);//gsl_blas_dnrm2(dif);
     
-        bestfit.best_par = new vector<long double>(10);
+        //bestfit.best_par = new vector<long double>(PARA_MAX);
         if(lessthan(cur_squsum,pre_best_squsum)) {
-            bestfit.id = j;
+            result.id = j;
             for(i=0; i<p; i++)
-                bestfit.best_par->at(i) = FIT(s->x,i);
+                result.best_par->at(i) = FIT(s->x,i);
             //params[k].best_par.push_back(FIT(s->x, i));
             pre_best_squsum = cur_squsum;
         }
         gsl_multifit_fdfsolver_free(s);
         gsl_matrix_free(covar);
 
-     if(pre_best_squsum < EPSILON)
+        if(pre_best_squsum < EPSILON)
         // we have found best fit, no need calc rest function
-        break;
+            break;
     }
 
     //delete[] y_data;
 
-    return 0;
+    return;
 }
 

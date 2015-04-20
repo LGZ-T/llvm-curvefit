@@ -215,6 +215,27 @@ bool comp(double a, double b)
     return a < b;
 }
 
+extern void fit(vector<unsigned> *x, long double *y_data, int num,vector<long double> &result);
+static vector<long double> fitresu(12);//10+2 should be replaced with PARA_MAX,i don't know how to do
+static vector<unsigned> x_data = {10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25};
+static long double PData[16], RData[16];
+static double totalnum[21];
+
+void constructPandR(ReuseContainer *left, ReuseContainer *right)
+{
+    ReuseContainer * templ = left, *tempr = right;
+
+    int i = 0;
+    while(i<=15)
+    {
+        PData[i] = (tempr->start->sum_num - tempr->start->num)/totalnum[i];
+        RData[i] = templ->get_ave_reuse();
+        tempr = tempr->down;
+        templ = templ->down;
+        i++;
+    }
+}
+
 //wait
 /*how to judje if two modules are similiar
  * 1. if the module has only one reuse distance
@@ -252,6 +273,8 @@ void split(ReuseContainer *root, ReuseContainer *header)
         temp = temp->down;
     }
     right = root->right;
+    constructPandR(root,right);
+    fit(&x_data,PData,16,fitresu);
     print_split(header);
     if(isContinue==false) return;
     if(lContinue==false && rContinue==false) return;
@@ -332,7 +355,7 @@ int main()
             sum += num;
             cur->append(new ReuseData(reuse,num,sum));
         }
-        
+        totalnum[i-10] = cur->end->sum_num;
         pre = cur;
         fclose(in);
     }
