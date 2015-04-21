@@ -220,7 +220,7 @@ static vector<long double> fitresu(12);//10+2 should be replaced with PARA_MAX,i
 static vector<unsigned> x_data = {10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25};
 static long double PData[16], RData[16];
 static double totalnum[21];
-
+static FILE *out;
 void constructPandR(ReuseContainer *left, ReuseContainer *right)
 {
     ReuseContainer * templ = left, *tempr = right;
@@ -234,6 +234,22 @@ void constructPandR(ReuseContainer *left, ReuseContainer *right)
         templ = templ->down;
         i++;
     }
+}
+
+void print_func_paras(vector<long double> &fitresu, long double *data)
+{
+    int paranum = fitresu[0];
+    for(int i=0;i<16;i++)
+    {
+        fprintf(out,"%Lf ",*(data+i));
+    }
+    fprintf(out,"\n");
+    for(int i=1;i<=paranum+1;i++)
+    {
+        fprintf(out,"%Lf\t",fitresu[i]);
+        //cout << fitresu[i] << "\t";
+    }
+    fprintf(out,"\n");
 }
 
 //wait
@@ -275,6 +291,9 @@ void split(ReuseContainer *root, ReuseContainer *header)
     right = root->right;
     constructPandR(root,right);
     fit(&x_data,PData,16,fitresu);
+    print_func_paras(fitresu,PData);
+    fit(&x_data,RData,16,fitresu);
+    print_func_paras(fitresu,RData);
     print_split(header);
     if(isContinue==false) return;
     if(lContinue==false && rContinue==false) return;
@@ -336,7 +355,8 @@ int main()
     unsigned long ref = 2104774, reuse, num, sum;
     ReuseContainer *root = new ReuseContainer();
     ReuseContainer *pre = root, *cur = NULL;
-
+    
+    out = fopen("fitFuncParas","w");
     for(int i=10;i<=30;i++)//there are 30 files
     {
         sum = 0;
