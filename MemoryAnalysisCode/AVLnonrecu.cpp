@@ -153,7 +153,7 @@ static void insert(unlong local_count)
     stack<BALNODE*> fa_stack;
     stack<int> rorl_stack;
     BALNODE *node = root.child[0];
-    int r_or_l = 0;
+    //int r_or_l = 0;
     fa_stack.push(&root);
     rorl_stack.push(0);
     /*there is no node in the tree*/
@@ -292,7 +292,8 @@ extern "C" {
 
 void getReuseDistance(unsigned int value)
 {
-    unlong ref = ((unlong)value)/64;
+    //there should use bit & not divide
+    unlong ref = ((unlong)value)>>6;
     unlong local_counter = global_counter++;
     map<unlong,unlong>::iterator iter = refmap.find(ref);
     if(iter==refmap.end())
@@ -324,18 +325,22 @@ void getReuseDistance(unsigned int value)
     }
 }
 
-void outinfo()
+void outinfo(char *argv[])
 {
-    unlong pid = (unlong)getpid();
-    char cpid[20];
-    sprintf(cpid,"mrd1%lu",pid);
-    ofstream out(cpid);
+    //unlong pid = (unlong)getpid();
+    //char cpid[20];
+    //sprintf(cpid,"mrd1%lu",pid);
+    ofstream out("reusedata",std::ofstream::app);
     map<unlong,map<unlong,unlong> >::iterator ite1 = result.begin(),end1 = result.end();
     for(;ite1!=end1;ite1++)
     {
         map<unlong,unlong>::iterator ite2 = ite1->second.begin(),end2 = ite1->second.end();
         for(;ite2!=end2;ite2++)
-            out<<"reference:"<<ite1->first<<"\t"<<"reuse:"<<ite2->first<<"\t"<<"num:"<<ite2->second<<endl;
+        {
+            out<< "datasize:"<<argv[3]<<"\treference:"<<ite1->first<<"\t"
+               <<"reuse:"<<ite2->first<<"\t"<<"num:"<<ite2->second<<endl;
+        }
+            
     }
     out.close();
 }

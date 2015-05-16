@@ -38,7 +38,7 @@ typedef struct reu
 class ReuseContainer
 {
 private: 
-    ulong ave_reuse, diff;//when should diff be changed????
+    ulong ave_reuse, diff;
 
 public:
     ReuseData *first, *start, *end;
@@ -51,7 +51,6 @@ public:
            ave_reuse(0),diff(d),first(NULL),
            start(s),end(e),down(NULL),right(NULL){}
 
-    //done
     ulong get_leading_bin() { return start->reuse; }
 
     //wait, ave_reuse doesnt need to be a func, every time when i change the
@@ -120,7 +119,7 @@ public:
     //i think it is done, but wait
     ReuseContainer * split(double ratio)
     {
-        ulong leftnum = (1/(1/ratio+1))*(end->sum_num-diff);
+        ulong leftnum = (ratio/(ratio+1))*(end->sum_num-diff);
         ReuseData *ite = start, *preite = start;
         ReuseContainer * rReuseContainer = NULL;
         
@@ -151,6 +150,7 @@ public:
     }
 };
 
+//?????????????????????????????????????????
 void print_split(ReuseContainer *header)
 {
     ReuseContainer * temp = header->down;
@@ -176,7 +176,7 @@ void print_split(ReuseContainer *header)
             cout << i << "\t" << tempj->get_ave_reuse() << "\t" << pos << endl;
             tempj = tempj->right;
         }
-        temp = temp->down;
+        temp = temp->down;//if i want to add another reference at the end,this should be changed
         i++;
     }
     cout << "################################################################" << endl;
@@ -184,7 +184,6 @@ void print_split(ReuseContainer *header)
     cout << "################################################################" << endl;
 }
 
-//done
 bool check_leading_bin(ReuseContainer *root)
 {
     ReuseContainer *temp = root->down;
@@ -199,7 +198,6 @@ bool check_leading_bin(ReuseContainer *root)
     return true;
 }
 
-//done
 void change_start(ReuseContainer *root)
 {
     ReuseContainer *temp = root->down;
@@ -221,6 +219,7 @@ static vector<unsigned> x_data = {10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,2
 static long double PData[16], RData[16];
 static double totalnum[21];
 static FILE *out;
+
 void constructPandR(ReuseContainer *left, ReuseContainer *right)
 {
     ReuseContainer * templ = left, *tempr = right;
@@ -254,8 +253,7 @@ void print_func_paras(vector<long double> &fitresu, long double *data)
 
 //wait
 /*how to judje if two modules are similiar
- * 1. if the module has only one reuse distance
- * 2. if the averge reuse distances of two modules have one(two,three,.....i don't know) difference
+ * the two modules have teh similiar fitting curve
  */
 void split(ReuseContainer *root, ReuseContainer *header)
 {
@@ -270,9 +268,9 @@ void split(ReuseContainer *root, ReuseContainer *header)
     
     sort(allratio.begin(),allratio.end(),comp);
     int size = allratio.size();
-    double finalratio = (allratio[size/2]+allratio[(size-1)/2])/2;
+    double finalratio = (allratio[size>>1]+allratio[(size-1)>>1])/2;
 
-    if(finalratio<0.0001 && finalratio>-0.0001) return;//finalratio will never be 0
+    if(finalratio<0.0001 && finalratio>-0.0001) return;//finalratio will never be 0,this is not gonna to happen
 
     temp = root;
     while(temp!=NULL)
@@ -352,11 +350,20 @@ int main()
 {
     char filename[50];
     FILE *in;
-    unsigned long ref = 2104774, reuse, num, sum;
+    unsigned long curref, preref = 0, reuse, num, sum, curdsize, predsize = 0;
     ReuseContainer *root = new ReuseContainer();
     ReuseContainer *pre = root, *cur = NULL;
     
     out = fopen("fitFuncParas","w");
+    in = fopen("reusedata","w");
+    fscanf(in,"%*9c%lu%*10c%lu%*7c%lu%*5c%lu%*c",&datasize,&curref,&reuse,&num);
+    while(!feof(in))
+    {
+        if(curref)
+        cur = new ReuseContainer();
+        pre->down = cur;
+        
+    }
     for(int i=10;i<=30;i++)//there are 30 files
     {
         sum = 0;
@@ -387,4 +394,5 @@ int main()
     }
     split(root->down,root);
     print_data(root);
+    return 0;
 }
