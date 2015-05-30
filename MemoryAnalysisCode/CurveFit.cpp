@@ -3,6 +3,7 @@
 #include <iostream>
 #include <iterator>
 #include <vector>
+#include <limits>
 #include <gsl/gsl_rng.h>
 #include <gsl/gsl_randist.h>
 #include <gsl/gsl_vector.h>
@@ -30,7 +31,7 @@ struct best_fit
 };
 
 vector<unsigned> *x_data;
-const unsigned para_num[]={2,2,3,2,3,3,2,3,3,3,3,3,3,3,2,3,1,4,3,3,3,4,3,4,4,3,4,4,5,5,3};
+const unsigned para_num[]={2,2,2,3,2,3,3,2,3,3,3,3,3,3,3,2,3,1,4,3,3,3,4,3,4,4,3,4,5,5,3};
 inline double FIT(gsl_vector* v, unsigned id)
 {
    double ret = gsl_vector_get(v, id);
@@ -46,32 +47,33 @@ long double cal_Yi(int id,const long double x,long double *a)
 	{
 		case 0:  result = a[0]*powl(x,a[1]);				                  break;
 		case 1:  result = a[0]*powl(a[1],x);                                  break;
-		case 2:  result = a[0]-a[1]*powl(a[2],x);                             break;
-		case 3:  result = 1-1/powl((1+a[0]*x),a[1]);                          break;
-		case 4:  result = a[0]+a[1]*x+a[2]*powl(x,2);                         break;
-		case 5:  result = a[0]*expl(a[1]*x+a[2]);                             break;	
-		case 6:  result = a[0]*(1-expl(-a[1]*x));                             break;
-		case 7:  result = a[0]+a[1]*powl(x,a[2]);                             break;	
-		case 8:  result = a[0]+a[1]*expl(-a[2]*x);                            break;
-		case 9:  result = a[0]+a[1]*expl(-x/a[2]);                            break;
-		case 10: result = powl(a[0],a[1]/(x+a[2]));                           break;
-		case 11: result = a[0]*powl(x-a[1],a[2]);                             break;
-		case 12: result = powl(a[0]+a[1]*x,-1/a[2]);                          break; 
-		case 13: result = a[0]-a[1]*logl(x+a[2]);                             break;
-		case 14: result = a[0]*logl(a[0]*x-a[1]);                             break;
-		case 15: result = a[0]*(1-expl(-a[1]*(x-a[2])));                      break;
-		case 16: result = -logl(a[0])*powl(a[0],x);                           break;
-		case 17: result = (a[0]+a[1]*x)/(a[2]+a[3]*x);                        break;
-		case 18: result = a[0]/(1+a[1]*expl(-a[2]*x));                        break;
-		case 19: result = a[0]/(1+expl(-a[1]*(x-a[2])));                      break;
-		case 20: result = expl(a[0]+a[1]*x+a[2]*powl(x,2));                   break;
-		case 21: result = a[0]*expl(-x/a[1])+a[2]+a[3]*x;                     break;
-		case 22: result = 1/(a[0]+a[1]*powl(x,a[2]));                         break;
-		case 23: result = a[0]+a[1]*x+a[2]*powl(a[3],x);                      break;
-		case 24: result = a[0]+a[1]*expl(-(x-a[2])/a[3]);                     break;
-		case 25: result = a[0]/(a[0]+a[1]*x+a[2]*powl(x,2));                  break;
-		case 26: result = a[0]*x/(a[1]+a[2]*x+a[3]*powl(x,2));                break;
-		case 27: result = a[0]+a[1]*x+a[2]*powl(x,2)+a[3]*powl(x,3);          break;
+        case 2:  result = a[0]+a[1]*x;                                        break;
+		case 3:  result = a[0]-a[1]*powl(a[2],x);                             break;
+		case 4:  result = 1-1/powl((1+a[0]*x),a[1]);                          break;
+		case 5:  result = a[0]+a[1]*x+a[2]*powl(x,2);                         break;
+		case 6:  result = a[0]*expl(a[1]*x+a[2]);                             break;	
+		case 7:  result = a[0]*(1-expl(-a[1]*x));                             break;
+		case 8:  result = a[0]+a[1]*powl(x,a[2]);                             break;	
+		case 9:  result = a[0]+a[1]*expl(-a[2]*x);                            break;
+		case 10:  result = a[0]+a[1]*expl(-x/a[2]);                           break;
+		case 11: result = powl(a[0],a[1]/(x+a[2]));                           break;
+		case 12: result = a[0]*powl(x-a[1],a[2]);                             break;
+		case 13: result = powl(a[0]+a[1]*x,-1/a[2]);                          break; 
+		case 14: result = a[0]-a[1]*logl(x+a[2]);                             break;
+		case 15: result = a[0]*logl(a[0]*x-a[1]);                             break;
+		case 16: result = a[0]*(1-expl(-a[1]*(x-a[2])));                      break;
+		case 17: result = -logl(a[0])*powl(a[0],x);                           break;
+		case 18: result = (a[0]+a[1]*x)/(a[2]+a[3]*x);                        break;
+		case 19: result = a[0]/(1+a[1]*expl(-a[2]*x));                        break;
+		case 20: result = a[0]/(1+expl(-a[1]*(x-a[2])));                      break;
+		case 21: result = expl(a[0]+a[1]*x+a[2]*powl(x,2));                   break;
+		case 22: result = a[0]*expl(-x/a[1])+a[2]+a[3]*x;                     break;
+		case 23: result = 1/(a[0]+a[1]*powl(x,a[2]));                         break;
+		case 24: result = a[0]+a[1]*x+a[2]*powl(a[3],x);                      break;
+		case 25: result = a[0]+a[1]*expl(-(x-a[2])/a[3]);                     break;
+		case 26: result = a[0]/(a[0]+a[1]*x+a[2]*powl(x,2));                  break;
+		case 27: result = a[0]*x/(a[1]+a[2]*x+a[3]*powl(x,2));                break;
+		//case 28: result = a[0]+a[1]*x+a[2]*powl(x,2)+a[3]*powl(x,3);          break;
 		case 28: result = a[0]+a[1]*expl(-x/a[2])+a[3]*expl(-x/a[4]);         break;
 		case 29: result = a[0]+a[1]*(1-expl(-x/a[2]))+a[3]*(1-expl(-x/a[4])); break;
 		case 30: result = a[0]*a[1]*powl(x,1-a[2])/(1+a[1]*powl(x,1-a[2]));   break;
@@ -80,18 +82,20 @@ long double cal_Yi(int id,const long double x,long double *a)
 	}	
 	return result;
 }
+
+//not done
 void print_func(int id, double* para)
 {
    switch(id){
       case 0: printf("%lf*x^%lf",          para[0], para[1]); break;
       case 1: printf("%lf*%lf^x",          para[0], para[1]); break;
-      case 2: printf("%lf-%lf*%lf^x",      para[0], para[1], para[2]); break;
-      case 3: printf("1-1/(1+%lf*x)^%lf",  para[0], para[1]); break;
-      case 4: printf("%lf+%lf*x + %lf*x^2", para[0], para[1], para[2]); break;
-      case 5: printf("%lf*e^(%lf*x+%lf)",  para[0], para[1], para[2]); break;
-      case 6: printf("%lf*(1-e^{-%lf*x})", para[0], para[1]); break;
-      case 7: printf("%lf+%lf*x^%lf",      para[0], para[1], para[2]); break;
-      case 8: printf("%lf+%lf*e^(-%lf*x)", para[0], para[1], para[2]); break;
+      case 3: printf("%lf-%lf*%lf^x",      para[0], para[1], para[2]); break;
+      case 4: printf("1-1/(1+%lf*x)^%lf",  para[0], para[1]); break;
+      case 5: printf("%lf+%lf*x + %lf*x^2", para[0], para[1], para[2]); break;
+      case 6: printf("%lf*e^(%lf*x+%lf)",  para[0], para[1], para[2]); break;
+      case 7: printf("%lf*(1-e^{-%lf*x})", para[0], para[1]); break;
+      case 8: printf("%lf+%lf*x^%lf",      para[0], para[1], para[2]); break;
+      case 9: printf("%lf+%lf*e^(-%lf*x)", para[0], para[1], para[2]); break;
       default: break;
    }
 }
@@ -108,137 +112,141 @@ void cal_d(int id,const long double x,long double *a, gsl_matrix *J,int i)
 		gsl_matrix_set(J,i,0,powl(a[1],x));
 		gsl_matrix_set(J,i,1,a[0]*powl(a[1],-1+x)*x);
 		break;
-	case 2:
+    case 2:
+        gsl_matrix_set(J,i,0,1);
+        gsl_matrix_set(J,i,1,x);
+        break;
+	case 3:
 		gsl_matrix_set(J,i,0,1);
 		gsl_matrix_set(J,i,1,-powl(a[2],x));
 		gsl_matrix_set(J,i,2,-a[1]*powl(a[2],-1+x)*x);
 		break;
-	case 3:
+	case 4:
 		gsl_matrix_set(J,i,0,a[1]*x*powl(1+a[0]*x,-1-a[1]));
 		gsl_matrix_set(J,i,1,powl(1+a[0]*x,-a[1])*logl(1+a[0]*x));
 		break;
-	case 4:
+	case 5:
 		gsl_matrix_set(J,i,0,1);
 		gsl_matrix_set(J,i,1,x);
 		gsl_matrix_set(J,i,2,powl(x,2));
 		break;
-	case 5:
+	case 6:
 		gsl_matrix_set(J,i,0,expl(a[2]+a[1]*x));
 		gsl_matrix_set(J,i,1,a[0]*expl(a[2]+a[1]*x)*x);
 		gsl_matrix_set(J,i,2,a[0]*expl(a[2]+a[1]*x));
 		break;
-	case 6:
+	case 7:
 		gsl_matrix_set(J,i,0,1-expl(-a[1]*x));
 		gsl_matrix_set(J,i,1,a[0]*expl(-a[1]*x)*x);
 		break;
-	case 7:
+	case 8:
 		gsl_matrix_set(J,i,0,1);
 		gsl_matrix_set(J,i,1,powl(x,a[2]));
 		gsl_matrix_set(J,i,2,a[1]*powl(x,a[2])*logl(x));
 		break;
-	case 8:
+	case 9:
 		gsl_matrix_set(J,i,0,1);
 		gsl_matrix_set(J,i,1,expl(-a[2]*x));
 		gsl_matrix_set(J,i,2,-a[1]*expl(-a[2]*x)*x);
 		break;
-	case 9:
+	case 10:
 		gsl_matrix_set(J,i,0,1);
 		gsl_matrix_set(J,i,1,expl(-x/a[2]));
 		gsl_matrix_set(J,i,2,a[1]*expl(-x/a[2])*x/powl(a[2],2));
 		break;
-	case 10:
+	case 11:
 		gsl_matrix_set(J,i,0,powl(a[0],-1+a[1]/(a[2]+x))*a[1]/(a[2]+x));
 		gsl_matrix_set(J,i,1,powl(a[0],a[1]/(a[2]+x))*logl(a[0])/(a[2]+x));
 		gsl_matrix_set(J,i,2,-powl(a[0],a[1]/(a[2]+x))*a[1]*logl(a[0])/powl(a[2]+x,2));
 		break;
-	case 11:
+	case 12:
 		gsl_matrix_set(J,i,0,powl(-a[1]+x,a[2]));
 		gsl_matrix_set(J,i,1,-a[0]*a[2]*powl(-a[1]+x,-1+a[2]));
 		gsl_matrix_set(J,i,2,a[0]*powl(-a[1]+x,a[2])*logl(-a[1]+x));
 		break;
-	case 12:
+	case 13:
 		gsl_matrix_set(J,i,0,-powl(a[0]+a[1]*x,-1-1/a[2])/a[2]);
 		gsl_matrix_set(J,i,1,-x*powl(a[0]+a[1]*x,-1-1/a[2])/a[2]);
 		gsl_matrix_set(J,i,2,powl(a[0]+a[1]*x,-1/a[2])*logl(a[0]+a[1]*x)/powl(a[2],2));
 		break;
-	case 13:
+	case 14:
 		gsl_matrix_set(J,i,0,1);
 		gsl_matrix_set(J,i,1,-logl(a[2]+x));
 		gsl_matrix_set(J,i,2,-a[1]/(a[2]+x));
 		break;
-	case 14:
+	case 15:
 		gsl_matrix_set(J,i,0,a[0]*x/(-a[1]+a[0]*x)+logl(-a[1]+a[0]*x));
 		gsl_matrix_set(J,i,1,-a[0]/(-a[1]+a[0]*x));
 		break;
-	case 15:
+	case 16:
 		gsl_matrix_set(J,i,0,1-expl(-a[1]*(-a[2]+x)));
 		gsl_matrix_set(J,i,1,-a[0]*expl(-a[1]*(-a[2]+x))*(a[2]-x));
 		gsl_matrix_set(J,i,2,-a[0]*a[1]*expl(-a[1]*(-a[2]+x)));	
 		break;
-	case 16:
+	case 17:
 		gsl_matrix_set(J,i,0,-powl(a[0],-1+x)-powl(a[0],-1+x)*x*logl(a[0]));
 		break;
-	case 17:
+	case 18:
 		gsl_matrix_set(J,i,0,1/(a[2]+a[3]*x));
 		gsl_matrix_set(J,i,1,x/(a[2]+a[3]*x));
 		gsl_matrix_set(J,i,2,-(a[0]+a[1]*x)/powl(a[2]+a[3]*x,2));
 		gsl_matrix_set(J,i,3,-x*(a[0]+a[1]*x)/powl(a[2]+a[3]*x,2));
 		break;
-	case 18:
+	case 19:
 		gsl_matrix_set(J,i,0,1/(1+a[1]*expl(-a[2]*x)));
 		gsl_matrix_set(J,i,1,-a[0]*expl(-a[2]*x)/powl(1+a[1]*expl(-a[2]*x),2));
 		gsl_matrix_set(J,i,2,a[0]*a[1]*expl(-a[2]*x)*x/powl(1+a[1]*expl(-a[2]*x),2));
 		break;
-	case 19:
+	case 20:
 		gsl_matrix_set(J,i,0,1/(1+expl(-a[1]*(-a[2]+x))));
 		gsl_matrix_set(J,i,1,-a[0]*expl(-a[1]*(-a[2]+x))*(a[2]-x)/powl(1+expl(-a[1]*(-a[2]+x)),2));
 		gsl_matrix_set(J,i,2,-a[0]*a[1]*expl(-a[1]*(-a[2]+x))/powl(1+expl(-a[1]*(-a[2]+x)),2));
 		break;
-	case 20:
+	case 21:
 		gsl_matrix_set(J,i,0,expl(a[0]+a[1]*x+a[2]*powl(x,2)));
 		gsl_matrix_set(J,i,1,expl(a[0]+a[1]*x+a[2]*powl(x,2))*x);
 		gsl_matrix_set(J,i,2,expl(a[0]+a[1]*x+a[2]*powl(x,2))*powl(x,2));
 		break;
-	case 21:
+	case 22:
 		gsl_matrix_set(J,i,0,expl(-x/a[1]));
 		gsl_matrix_set(J,i,1,a[0]*expl(-x/a[1])*x/powl(a[1],2));
 		gsl_matrix_set(J,i,2,1);
 		gsl_matrix_set(J,i,3,x);
 		break;
-	case 22:
+	case 23:
 		gsl_matrix_set(J,i,0,-1/powl(a[0]+a[1]*powl(x,a[2]),2));
 		gsl_matrix_set(J,i,1,-powl(x,a[2])/powl(a[0]+a[1]*powl(x,a[2]),2));
 		gsl_matrix_set(J,i,2,-a[1]*powl(x,a[2])*logl(x)/powl(a[0]+a[1]*powl(x,a[2]),2));
 		break;
-	case 23:
+	case 24:
 		gsl_matrix_set(J,i,0,1);
 		gsl_matrix_set(J,i,1,x);
 		gsl_matrix_set(J,i,2,powl(a[3],x));
 		gsl_matrix_set(J,i,3,a[2]*powl(a[3],-1+x)*x);
 		break;
-	case 24:
+	case 25:
 		gsl_matrix_set(J,i,0,1);
 		gsl_matrix_set(J,i,1,expl((a[2]-x)/a[3]));
 		gsl_matrix_set(J,i,2,a[1]*expl((a[2]-x)/a[3])/a[3]);
 		gsl_matrix_set(J,i,3,-a[1]*expl((a[2]-x)/a[3])*(a[2]-x)/powl(a[3],2));
 		break;
-	case 25:
+	case 26:
 		gsl_matrix_set(J,i,0,-a[0]/powl(a[0]+a[1]*x+a[2]*powl(x,2),2)+1/(a[0]+a[1]*x+a[2]*powl(x,2)));
 		gsl_matrix_set(J,i,1,-a[0]*x/powl(a[0]+a[1]*x+a[2]*powl(x,2),2));
 		gsl_matrix_set(J,i,2,-a[0]*powl(x,2)/powl(a[0]+a[1]*x+a[2]*powl(x,2),2));
 		break;
-	case 26:
+	case 27:
 		gsl_matrix_set(J,i,0,x/(a[1]+a[2]*x+a[3]*powl(x,2)));
 		gsl_matrix_set(J,i,1,-a[0]*x/powl(a[1]+a[2]*x+a[3]*powl(x,2),2));
 		gsl_matrix_set(J,i,2,-a[0]*powl(x,2)/powl(a[1]+a[2]*x+a[3]*powl(x,2),2));
 		gsl_matrix_set(J,i,3,-a[0]*powl(x,3)/powl(a[1]+a[2]*x+a[3]*powl(x,2),2));
 		break;
-	case 27:
+	/*case 28:
 		gsl_matrix_set(J,i,0,1);
 		gsl_matrix_set(J,i,1,x);
 		gsl_matrix_set(J,i,2,powl(x,2));
 		gsl_matrix_set(J,i,3,powl(x,3));
-		break;
+		break;*/
 	case 28:
 		gsl_matrix_set(J,i,0,1);
 		gsl_matrix_set(J,i,1,expl(-x/a[2]));
@@ -258,12 +266,13 @@ void cal_d(int id,const long double x,long double *a, gsl_matrix *J,int i)
 		gsl_matrix_set(J,i,1,a[0]*powl(x,1-a[2])/powl(1+a[1]*powl(x,1-a[2]),2));
 		gsl_matrix_set(J,i,2,-a[0]*a[1]*powl(x,1-a[2])*logl(x)/powl(1+a[1]*powl(x,1-a[2]),2));
 		break;
+
 	}
 }
 int expb_f(const gsl_vector *x,void *data,gsl_vector *f)
 {
 	size_t i, n = ((struct data *)data)->n;
-	long double a[20], Yi, *y = ((struct data *)data)->y;
+	long double a[PARA_MAX], Yi, *y = ((struct data *)data)->y;
 	int id = ((struct data*)data)->id; 
 	for(i=0; i<para_num[id]; i++)
 		a[i] = gsl_vector_get(x,i);
@@ -281,7 +290,7 @@ int expb_df(const gsl_vector *x, void *data, gsl_matrix *J)
 	size_t n = ((struct data *)data)->n;
 	int id = ((struct data *)data)->id;
 	size_t i;
-	long double a[20];
+	long double a[PARA_MAX];
 	for(i=0; i<para_num[id]; i++)
 		a[i] = gsl_vector_get(x,i);
 
@@ -323,7 +332,7 @@ void fit(vector<unsigned> *x, long double *y_data, int num,vector<long double> &
 	unsigned i, j, p, n, k=0, iter=0;
 	double para_init[PARA_MAX] = {1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0};
 	const gsl_multifit_fdfsolver_type *T;
-	long double pre_best_squsum, cur_squsum;
+	long double pre_best_squsum = numeric_limits<long double>::max(), cur_squsum;
     //struct best_fit bestfit;
     //y_data = new long double[X_NUM];
 	struct data d;
@@ -336,6 +345,7 @@ void fit(vector<unsigned> *x, long double *y_data, int num,vector<long double> &
 	n = num;	
     for(j=0; j<FUNC_NUM; j++)
     {
+        cout << "FUNC " << j;
         p = para_num[j];
         if(n<p) continue;
         covar = gsl_matrix_alloc(p,p);
@@ -369,13 +379,19 @@ void fit(vector<unsigned> *x, long double *y_data, int num,vector<long double> &
         //gsl_vector_set(dif,i,gsl_vector_get(s->f,i)-y_data[i]);
         dif = s->f;//xiehuc: s->f = f(x) - y[i], where y[i] is real data, and f(x) is guess data.
         cur_squsum = cal_squaresum(dif, n, j);//gsl_blas_dnrm2(dif);
-    
+        
+        cout << ":" << cur_squsum << endl; 
         //bestfit.best_par = new vector<long double>(PARA_MAX);
         if(lessthan(cur_squsum,pre_best_squsum)) {
-            result.at(0) = p;
-            result.at(1) = j;
+            result.at(0) = j;
+            result.at(1) = p;
+            //cout << "in if " << cur_squsum << ":" << endl;
             for(i=0; i<p; i++)
+            {
                 result.at(i+2) = FIT(s->x,i);
+                //cout << result[i+2] << "\t";
+            }
+            //cout << endl;
             //params[k].best_par.push_back(FIT(s->x, i));
             pre_best_squsum = cur_squsum;
         }

@@ -10,18 +10,19 @@ set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} ${LLVM_CXX_FLAGS}")
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} ${LLVM_CPP_FLAGS}")
 
 llvm_map_components_to_libraries(LLVM_PRED_LIBRARY bitreader analysis)
-add_executable(curve-fit
-   CurveFit.cpp
-   )
+#add_executable(curve-fit
+#   CurveFit.cpp
+#   )
 
-target_link_libraries(curve-fit
-   ${GSL_LIBRARIES}
-   ${LLVM_DYNAMIC_LIBRARY}
-   ${LLVM_PROF_LIBRARIES}
-   )
+#target_link_libraries(curve-fit
+#   ${GSL_LIBRARIES}
+#   ${LLVM_DYNAMIC_LIBRARY}
+#   ${LLVM_PROF_LIBRARIES}
+#   )
 
 add_library(MemoryModel SHARED
    ReuseDistance.cpp
+   BasicBlockTime.cpp
     )
 
 target_link_libraries(MemoryModel

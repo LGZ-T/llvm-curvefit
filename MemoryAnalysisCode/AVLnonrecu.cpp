@@ -284,7 +284,7 @@ void delnode(unlong local_count, unlong *reuse)
     
 }
 
-
+//unsigned int shall be changed to unsigned long long
 extern "C" {
     void getReuseDistance(unsigned int value);
     void outinfo();
@@ -337,8 +337,8 @@ void outinfo(char *argv[])
         map<unlong,unlong>::iterator ite2 = ite1->second.begin(),end2 = ite1->second.end();
         for(;ite2!=end2;ite2++)
         {
-            out<< "datasize:"<<argv[3]<<"\treference:"<<ite1->first<<"\t"
-               <<"reuse:"<<ite2->first<<"\t"<<"num:"<<ite2->second<<endl;
+            //data size#reference#reuse#num
+            out<< argv[3] <<"\t"<<ite1->first <<"\t"<< ite2->first <<"\t"<< ite2->second<<endl;
         }
             
     }

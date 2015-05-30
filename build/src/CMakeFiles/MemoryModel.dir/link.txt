@@ -1,1 +1,0 @@
-/usr/bin/clang++-3.5  -fPIC -O3 -DNDEBUG    -shared -Wl,-soname,libMemoryModel.so -o libMemoryModel.so CMakeFiles/MemoryModel.dir/ReuseDistance.cpp.o -lLLVM-3.5.0 -lLLVMProfiling 

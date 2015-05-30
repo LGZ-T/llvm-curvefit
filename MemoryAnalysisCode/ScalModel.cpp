@@ -237,7 +237,7 @@ void constructPandR(ReuseContainer *left, ReuseContainer *right)
 
 void print_func_paras(vector<long double> &fitresu, long double *data)
 {
-    int paranum = fitresu[0];
+    int paranum = fitresu[1];
     for(int i=0;i<16;i++)
     {
         fprintf(out,"%Lf ",*(data+i));
