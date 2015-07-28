@@ -7,9 +7,9 @@ if [ ! -f "../build/src/origin.bc" ]; then
 fi
 
 
-opt-3.5 -load ../build/src/libMemoryMedol.so -BBTime ../buid/src/origin.bc -o ../build/src/bbtime.bc
+#opt-3.5 -load ../build/src/libMemoryMedol.so -BBTime ../buid/src/origin.bc -o ../build/src/bbtime.bc
 
-clang++-3.5 ../BasicBlockTime/getbbtime.cpp ../build/src/bbtime.bc -o ../build/src/bbtime
+#clang++-3.5 ../BasicBlockTime/getbbtime.cpp ../build/src/bbtime.bc -o ../build/src/bbtime
 
 rm bbtotaltime
 for ((i=50;i<201;i=i+10)) 
