@@ -10,44 +10,69 @@
 
 using namespace llvm;
 
-uint64_t bbid = 0;
+uint64_t funcid = 0;
 /*enum {LShr,Sub,Or,Shl,Xor,Add,AShr,And,PtrToInt,BitCast,GetElementPtr,ICmp,UIToFP,Select,Mul,FAdd,IntToPtr,ZExt,SExt,Trunc,
       FSub,FCmp,SIToFP,FPToUI,FPToSI,FMul,Alloca,FPExt,FPTrunc,UDiv,SDiv,URem,}*/
 namespace{
-    struct BBTime:public BasicBlockPass{
+    struct funcTime:public FunctionPass{
         static char ID;
-        BBTime():BasicBlockPass(ID) {}
-        bool runOnBasicBlock(BasicBlock &bb) override
+        funcTime():FunctionPass(ID) {}
+        bool runOnFunction(Function &func) override
         {
             //unsigned opcode, pipeline = 0;
-            BasicBlock::iterator start,end;
-            Module *M = bb.getParent()->getParent();
-            LLVMContext& Context = bb.getContext();
-            Type* int64ty = Type::getInt64Ty(Context);
-            Constant* FuncEntry1 = M->getOrInsertFunction("getBBTime", Type::getVoidTy(Context),int64ty,NULL);
-            //Constant* FuncEntry2 = M->getOrInsertFunction("getBBTime2", Type::getVoidTy(Context),int64ty,NULL);
-            Value *args[1] = {ConstantInt::get(int64ty,bbid)};
-            bbid++;
-            start = bb.getFirstInsertionPt();
-            end = bb.end();
-            end--;
-            Instruction *first = &*start;
-            Instruction *last = &*end;
-            if(first!=last)
+            if(func.getName().equals("main"))
             {
-                CallInst::Create(FuncEntry1,args,"",first);
-                CallInst::Create(FuncEntry1,args,"",last);
-            }
-            /*for(start=bb.begin(),end=bb.end();start!=end;start++)
-            {
-                Instruction *inst = &*start;
-                opcode = inst->getOpcode();
+                Module *M = func.getParent();
+                LLVMContext& context = func.getContext();
+//                Type * int64ty = Type::getInt64Ty(context);
+                Constant *FuncEntry1 = M->getOrInsertFunction("getfuncTime1",Type::getVoidTy(context),NULL);
+                Constant *FuncEntry2 = M->getOrInsertFunction("getfuncTime2",Type::getVoidTy(context),NULL);
+                Function::iterator ite;
+                for(ite=func.begin();ite!=func.end();ite++)
+                {
+                    BasicBlock *bb = &*ite;
+                    BasicBlock::iterator start, end;
+                    start = bb->getFirstInsertionPt();
+                    end = bb->end();
+                    end--;
+                    Instruction *first = &*start;
+                    Instruction *last = &*end;
+                    if(first!=last)//it is not empty
+                    {
+                        CallInst::Create(FuncEntry1,"",first);
+                        CallInst::Create(FuncEntry2,"",last);
+                    }
+                }
                 
-            }*/
+            }
+//            BasicBlock::iterator start,end;
+//            Module *M = func.getParent()->getParent();
+//            LLVMContext& Context = func.getContext();
+//            Type* int64ty = Type::getInt64Ty(Context);
+//            Constant* FuncEntry1 = M->getOrInsertFunction("getfuncTime", Type::getVoidTy(Context),int64ty,NULL);
+//            //Constant* FuncEntry2 = M->getOrInsertFunction("getfuncTime2", Type::getVoidTy(Context),int64ty,NULL);
+//            Value *args[1] = {ConstantInt::get(int64ty,funcid)};
+//            funcid++;
+//            start = func.getFirstInsertionPt();
+//            end = func.end();
+//            end--;
+//            Instruction *first = &*start;
+//            Instruction *last = &*end;
+//            if(first!=last)
+//            {
+//                CallInst::Create(FuncEntry1,args,"",first);
+//                CallInst::Create(FuncEntry1,args,"",last);
+//            }
+//            /*for(start=func.begin(),end=func.end();start!=end;start++)
+//            {
+//                Instruction *inst = &*start;
+//                opcode = inst->getOpcode();
+//                
+//            }*/
             return true;
         }
     };
 }
 
-char BBTime::ID = 0;
-static RegisterPass<BBTime> X("BBTime","get the execute time of each basic block",false,false);
+char funcTime::ID = 0;
+static RegisterPass<funcTime> X("mfuncTime","get exec time of basic blocks which resides in the main func",false,false);
