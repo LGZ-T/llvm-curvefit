@@ -1,12 +1,11 @@
-#include <map>
-#include <string>
 #include <stdio.h>
 #include <errno.h>
 #include <stdlib.h>
 #include <stdint.h>
 #include <time.h>
+#include <sys/types.h>
+#include <unistd.h>
 
-using namespace std;
 typedef unsigned long long ulonglong;
 
 /* We use 64bit values for the times.  */
@@ -34,26 +33,28 @@ uint64_t timing_err()
     return b-a;
 }
 
-extern "C"
+/*extern "C"
 {
     void getBBTime1();
     void getBBTime2();
-}
+}*/
 
 ulonglong first,second;
 
-void getBBTime1()
+void getfuncTime1()
 {
     first = timing();
 }
 
-void getBBTime2()
+void getfuncTime2()
 {
         second = timing();
         second = second - first;
         ulonglong temp = timing_err();
         if(second<temp) second = 3;
         else second -= temp;
-        fprintf(stderr,"%llu",second);
+        static int pid = -1;
+        if(pid==-1) pid = getpid();
+        fprintf(stderr,"%d %llu\n",pid,second);
 }
 

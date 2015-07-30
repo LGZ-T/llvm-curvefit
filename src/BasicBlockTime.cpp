@@ -20,7 +20,7 @@ namespace{
         bool runOnFunction(Function &func) override
         {
             //unsigned opcode, pipeline = 0;
-            if(func.getName().equals("main"))
+            if(func.getName().equals("MAIN__"))
             {
                 Module *M = func.getParent();
                 LLVMContext& context = func.getContext();
