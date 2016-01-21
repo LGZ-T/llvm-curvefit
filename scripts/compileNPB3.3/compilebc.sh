@@ -39,27 +39,19 @@ done
 mv ep.D.*.bc ./bin/originbc
 mv ep.D.* ./bin/originexec
 
-dir=$(ls ./bin/originexec/)
+dir=$(ls ./bin/originbc/)
 
 for i in $dir
 do
     var=${i//./ }
     arr=($var)
-    input=""
-    output=""
-    if [ -z "${arr[2]}" ]; then
-        make ${arr[0]} NPROCS=1 CLASS=${arr[1]} llvm=1
-        input=${arr[0]}"."${arr[1]}
-        output=${arr[0]}"."${arr[1]}
-    else
-        make ${arr[0]} NPROCS=${arr[2]} CLASS=${arr[1]} llvm=1
-        input=${arr[0]}"."${arr[1]}"."${arr[2]}
-        output=${arr[0]}"."${arr[1]}"."${arr[2]}
-    fi
+    output=${arr[0]}"."${arr[1]}"."${arr[2]}
     cd ./bin
-    opt-3.5 -load ~/Document/projects/llvm-pred/build/src/libLLVMPred.so -insert-edge-profiling -insert-mpi-profiling ./originbc/${input}".bc" -o ./edgempibc/${output}".edgempi.bc"
-    llc-3.5 -filetype=obj ./edgempibc/${output}".edgempi.bc" -o ${output}".edgempi.o"
-    mpif90 ${output}".edgempi.o" -L/usr/local/lib `pkg-config llvm-prof --variable=profile_rt_lib` -o ./edgempiexec/${output}".edgempi"
+    opt-3.5 -load ~/Document/projects/llvm-pred/build/src/libLLVMPred.so -insert-edge-profiling -insert-mpi-profiling ./originbc/$i -o ./edgebc/${output}".edge.bc"
+    opt-3.5 -load ~/Documents/project/llvm-curvefit/build/src/libMemoryModel.so -BBTime ./originbc/$i -o ./bbtimebc/${output}".bbtime.bc"
+    llc-3.5 -filetype=obj ./edgebc/${output}".edge.bc" -o ${output}".edge.o"
+    mpif90 ${output}".edge.o" -L/usr/local/lib `pkg-config llvm-prof --variable=profile_rt_lib` -o ./edgeexec/${output}".edge"
+    clang++-3.5 ~/Documents/project/llvm-curvefit/BasicBlockTime/getbbtime.cpp ./bbtimebc/${output}".bbtime.bc" -o ./bbtimeexec/${output}".bbtime"
     rm *.o
     cd ..
 done
