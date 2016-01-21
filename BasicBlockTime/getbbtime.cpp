@@ -1,8 +1,5 @@
-//#include <iostream>
 #include <map>
 #include <string>
-//#include <time.h>
-//#include <stdint.h>
 #include <stdio.h>
 #include <errno.h>
 #include <stdlib.h>
@@ -82,7 +79,7 @@ void getBBTime(ulonglong bbid)
 {
     static bool isentry = true;
     static ulonglong  totaltime = 0, cycly1,cycly2, temp;
-    static long double curtime;
+    static long double curtime, test;
     static map<ulonglong,ulonglong>::iterator itc;
     static map<ulonglong,long double>::iterator itb;
     if(isentry)
@@ -103,20 +100,24 @@ void getBBTime(ulonglong bbid)
     else
     {
         cycly2 = timing();
-        cycly2 -= cycly1;
-        cycly1 = timing_err();
-        temp = timing_err();
-        cycly1 = temp-cycly1;
-        if(cycly2<cycly1) cycly2 = 0;
+        test = cycly2;
+        test -= cycly1;
+
+        //cycly1 = timing_err();
+        //temp = timing_err();
+        //cycly1 = temp-cycly1;
+        if(test < 0) { fprintf(stderr,"%llu is less than 0\n",bbid); cycly2 = 0; }
         else cycly2 -= cycly1;
-        curtime = cycly2*CPUT;  //timing_res();
+        //curtime = cycly2*CPUT;
         //fprintf(stderr,"%llu %Lf\n",bbid,curtime);
         itb = bbtime.find(bbid);
-        itb->second = (itb->second*(itc->second-1)+curtime)/itc->second;
-        totaltime += curtime;
+        itb->second = (itb->second*(itc->second-1)+cycly2)/itc->second;
+        //totaltime += curtime;
+        fprintf(stderr,"block:%llu cycle:%Lf\n",bbid,itb->second);
         isentry = true;
     }
 }
+
 void outinfo()
 {
     map<ulonglong,ulonglong>::iterator itc,end;
