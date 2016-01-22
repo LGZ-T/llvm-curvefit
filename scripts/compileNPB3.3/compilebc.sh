@@ -11,10 +11,10 @@ for(( i=2; i<=15; i++ ))
 do
     make sp NPROCS=$[$i*$i] CLASS=D
     make bt NPROCS=$[$i*$i] CLASS=D
-    rm ./SP/*.o ./BT/*.o
+    rm ./SP/*.o ./BT/*.o ./common/*.o
     make sp NPROCS=$[$i*$i] CLASS=D llvm=1
     make bt NPROCS=$[$i*$i] CLASS=D llvm=1
-    rm ./SP/*.o ./BT/*.o
+    rm ./SP/*.o ./BT/*.o ./common/*.o
 done
 mv sp.D.*.bc bt.D.*.bc ./bin/originbc
 mv sp.D.* bt.D.* ./bin/originexec
@@ -25,12 +25,12 @@ do
     make ft NPROCS=$i CLASS=D
     make lu NPROCS=$i CLASS=D
     make is NPROCS=$i CLASS=D
-    rm ./CG/*.o ./FT/*.o ./LU/*.o ./IS/*.o
+    rm ./CG/*.o ./FT/*.o ./LU/*.o ./IS/*.o ./common/*.o
     make cg NPROCS=$i CLASS=D llvm=1
     make ft NPROCS=$i CLASS=D llvm=1
     make lu NPROCS=$i CLASS=D llvm=1
     make is NPROCS=$i CLASS=D llvm=1
-    rm ./CG/*.o ./FT/*.o ./LU/*.o ./IS/*.o
+    rm ./CG/*.o ./FT/*.o ./LU/*.o ./IS/*.o ./common/*.o
 done
 mv cg.D.*.bc ft.D.*.bc lu.D.*.bc is.D.*.bc ./bin/originbc
 mv sp.D.* bt.D.* lu.D.* is.D.* ./bin/originexec
@@ -39,7 +39,7 @@ for(( i=2; i<=250; i++ ))
 do
     make ep NPROCS=$i CLASS=D
     make ep NPROCS=$i CLASS=D llvm=1
-    rm ./ep/*.o
+    rm ./ep/*.o ./common/*.o
 done
 mv ep.D.*.bc ./bin/originbc
 mv ep.D.* ./bin/originexec
