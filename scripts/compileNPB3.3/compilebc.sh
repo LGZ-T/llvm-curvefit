@@ -58,7 +58,8 @@ do
     opt-3.5 -load ~/Document/projects/llvm-curvefit/build/src/libMemoryModel.so -BBTime ./originbc/$i -o ./bbtimebc/${output}".bbtime.bc"
 #    llc-3.5 -filetype=obj ./edgebc/${output}".edge.bc" -o ${output}".edge.o"
 #    mpif90 ${output}".edge.o" -L/usr/local/lib `pkg-config llvm-prof --variable=profile_rt_lib` -o ./edgeexec/${output}".edge"
-    clang++-3.5 -I/usr/local/include/openmpi/include ~/Document/projects/llvm-curvefit/BasicBlockTime/getbbtime.cpp ./bbtimebc/${output}".bbtime.bc" -o ./bbtimeexec/${output}".bbtime"
-#    rm *.o
+    llc-3.5 -filetype=obj -code-model=medium ./bbtimebc/${output}".bbtime.bc"
+    clang++-3.5 -L/usr/local/lib -L/usr/local/lib/openmpi/ -lmpi_mpifh -mcmodel=medium -lgfortran ${output}".bbtime.o"  ~/Document/projects/llvm-curvefit/BasicBlockTime/getbbtime.cpp -o ./bbtimeexec/${output}".bbtime"
+    rm *.o
     cd ..
 done
