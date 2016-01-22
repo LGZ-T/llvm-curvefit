@@ -7,7 +7,7 @@ MPICC = clang-3.5
 CC = $(MPICC) -g
 CMPI_INC = -I/usr/local/include -I/usr/lib/openmpi/include -I/usr/lib/openmpi/include/openmpi
 CLINKFLAGS = -O -I/usr/lib/openmpi/include -I/usr/lib/openmpi/include/openmpi -pthread \
-             -L/usr/lib -L/usr/lib/openmpi/lib -lmpi -ldl -lhwloc
+             -L/usr/lib -L/usr/lib/openmpi/lib -L/usr/local/lib -lmpi -ldl -lhwloc -mcmodel=medium
 
 #other settings
 BINDIR	= ../bin
@@ -29,8 +29,6 @@ FLINK = $(MPIF77)
 CLINK = $(MPICC)
 FFLAGS = -O -mcmodel=medium
 CFLAGS = $(CLINKFLAGS)
-CLINKFLAGS = -O -I/usr/lib/openmpi/include -I/usr/lib/openmpi/include/openmpi -pthread \
-             -L/usr/lib -L/usr/lib/openmpi/lib -lmpi -ldl -lhwloc
 FLINKFLAGS = -O
 CMPI_LIB  = -L/usr/local/lib -L/usr/lib -L/usr/lib/openmpi/lib -lmpi -ldl -lhwloc
 FMPI_LIB  = -L/usr/local/lib -lmpi
