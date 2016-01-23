@@ -91,8 +91,8 @@ void getBBTime(ulonglong bbid)
         }
         else
         {
-            counter.insert(pair<ulonglong,ulonglong>(bbid,1));
-            bbtime.insert(pair<ulonglong,long double>(bbid,0));
+            itc = counter.insert(pair<ulonglong,ulonglong>(bbid,1)).first;
+            bbtime.insert(pair<ulonglong,ulonglong>(bbid,0));
         }
         isentry = false;
         cycly1 = timing();
@@ -102,7 +102,6 @@ void getBBTime(ulonglong bbid)
         cycly2 = timing();
         test = cycly2;
         test -= cycly1;
-
         //cycly1 = timing_err();
         //temp = timing_err();
         //cycly1 = temp-cycly1;
@@ -113,7 +112,7 @@ void getBBTime(ulonglong bbid)
         itb = bbtime.find(bbid);
         itb->second = (itb->second*(itc->second-1)+cycly2)/itc->second;
         //totaltime += curtime;
-        fprintf(stderr,"block:%llu cycle:%Lf\n",bbid,itb->second);
+        fprintf(stderr,"block:%llu cycle:%Lf iter:%llu\n",bbid,itb->second,itc->second);
         isentry = true;
     }
 }
