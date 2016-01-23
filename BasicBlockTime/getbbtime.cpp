@@ -128,7 +128,7 @@ void outinfo()
     int pid = getpid();
     gethostname(hostname,99);
     outstring << hostname << "." << pid << ".out";
-    ofstream ofs(outstring.str(),ofstream::out);
+    ofstream ofs(outstring.str().c_str());
     map<ulonglong,ulonglong>::iterator itc,end;
     for(itc=counter.begin(),end=counter.end();itc!=end;itc++)
     {
