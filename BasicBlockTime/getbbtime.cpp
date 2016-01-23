@@ -1,9 +1,12 @@
 #include <map>
+#include <sstream>
+#include <fstream>
 #include <string>
 #include <stdio.h>
 #include <errno.h>
 #include <stdlib.h>
 #include <stdint.h>
+#include <unistd.h>
 #include <time.h>
 #define CPUT 0.37037
 
@@ -71,6 +74,7 @@ uint64_t timing_err()
 extern "C"
 {
     void getBBTime(ulonglong bbid);
+    void outinfo();
 }
 map<ulonglong,ulonglong> counter;
 map<ulonglong,long double> bbtime;
@@ -112,16 +116,23 @@ void getBBTime(ulonglong bbid)
         itb = bbtime.find(bbid);
         itb->second = (itb->second*(itc->second-1)+cycly2)/itc->second;
         //totaltime += curtime;
-        fprintf(stderr,"block:%llu cycle:%Lf iter:%llu\n",bbid,itb->second,itc->second);
+        //fprintf(stderr,"block:%llu cycle:%Lf iter:%llu\n",bbid,itb->second,itc->second);
         isentry = true;
     }
 }
 
 void outinfo()
 {
+    ostringstream outstring;
+    char hostname[100];
+    int pid = getpid();
+    gethostname(hostname,99);
+    outstring << hostname << "." << pid << ".out";
+    ofstream ofs(outstring.str(),ofstream::out);
     map<ulonglong,ulonglong>::iterator itc,end;
     for(itc=counter.begin(),end=counter.end();itc!=end;itc++)
     {
-        fprintf(stderr,"%llu\t%Lf\n",itc->first,itc->second*bbtime[itc->first]);
+        ofs << itc->first << "\t" << itc->second*bbtime[itc->first] << "\n";
+        //fprintf(stderr,"%llu\t%Lf\n",itc->first,itc->second*bbtime[itc->first]);
     }
 }

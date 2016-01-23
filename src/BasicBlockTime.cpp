@@ -37,6 +37,11 @@ namespace{
                         CallInst::Create(FuncEntry1,args,"",first);
                         CallInst::Create(FuncEntry1,args,"",last);
                     }
+                    if(std::string(last->getOpcodeName())=="ret")
+                    {
+                        Constant *FuncEntry=M->getOrInsertFunction("outinfo",Type::getVoidTy(Context),NULL,NULL);
+                        CallInst::Create(FuncEntry,"",last); 
+                    }
                 }
             }
            
