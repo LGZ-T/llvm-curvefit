@@ -19,7 +19,7 @@ namespace{
         BBTime():FunctionPass(ID) {}
         bool runOnFunction(Function &f) override
         {
-            if(f.getName()=="main")
+            if(f.getName()=="MAIN__")
             {
                 Module *M = f.getParent();
                 LLVMContext &Context = f.getContext();
