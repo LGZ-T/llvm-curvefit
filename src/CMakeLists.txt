@@ -24,10 +24,10 @@ add_library(MemoryModel SHARED
    ReuseDistance.cpp
    BasicBlockTime.cpp
     )
-
 target_link_libraries(MemoryModel
 	${LLVM_DYNAMIC_LIBRARY}
 	${LLVM_PROF_LIBRARIES}
+	-L/home/wzzhang/usr/local/lib/
 	)
 
 if(LLVM_VERSION VERSION_EQUAL "3.4")
