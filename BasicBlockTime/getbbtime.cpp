@@ -137,7 +137,7 @@ void outinfo()
         map<ulonglong,ulonglong>::iterator itc,end;
         for(itc=counter.begin(),end=counter.end();itc!=end;itc++)
         {
-            ofs << itc->first << "\t" << itc->second*bbtime[itc->first] << "\n";
+            ofs << itc->first << "\t" << itc->second*bbtime[itc->first] <<"\t"<<itc->second << "\n";
             //fprintf(stderr,"%llu\t%Lf\n",itc->first,itc->second*bbtime[itc->first]);
         }
     }
