@@ -124,10 +124,11 @@ void getBBTime(ulonglong bbid)
 
 void outinfo()
 {
-    int id;
-    MPI_Comm_rank(MPI_COMM_WORLD,&id);
-    if(id==0)
-    {
+//    int id;
+// mpi_comm_rank is called after mpi_finalize, it's wrong. and i don't know what to do,so just comment the clause.
+//    MPI_Comm_rank(MPI_COMM_WORLD,&id);
+//    if(id==0)
+//    {
         ostringstream outstring;
         char hostname[100];
         int pid = getpid();
@@ -140,5 +141,5 @@ void outinfo()
             ofs << itc->first << "\t" << itc->second*bbtime[itc->first] <<"\t"<<itc->second << "\n";
             //fprintf(stderr,"%llu\t%Lf\n",itc->first,itc->second*bbtime[itc->first]);
         }
-    }
+//    }
 }
