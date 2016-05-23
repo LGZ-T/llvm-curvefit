@@ -123,16 +123,22 @@ void getBBTime(ulonglong bbid)
 
 void outinfo()
 {
-    ostringstream outstring;
-    char hostname[100];
-    int pid = getpid();
-    gethostname(hostname,99);
-    outstring << hostname << "." << pid  << ".out";
-    ofstream ofs(outstring.str(),ofstream::out);
-    map<ulonglong,ulonglong>::iterator itc,end;
-    for(itc=counter.begin(),end=counter.end();itc!=end;itc++)
-    {
-        ofs << itc->first << "\t" << itc->second*bbtime[itc->first] << "\t" << itc->second << "\n";
-        //fprintf(stderr,"%llu\t%Lf\n",itc->first,itc->second*bbtime[itc->first]);
-    }
+//    int id;
+// mpi_comm_rank is called after mpi_finalize, it's wrong. and i don't know what to do,so just comment the clause.
+//    MPI_Comm_rank(MPI_COMM_WORLD,&id);
+//    if(id==0)
+//    {
+        ostringstream outstring;
+        char hostname[100];
+        int pid = getpid();
+        gethostname(hostname,99);
+        outstring << hostname << "." << pid << ".out";
+        ofstream ofs(outstring.str(),ofstream::out);
+        map<ulonglong,ulonglong>::iterator itc,end;
+        for(itc=counter.begin(),end=counter.end();itc!=end;itc++)
+        {
+            ofs << itc->first << "\t" << itc->second*bbtime[itc->first] <<"\t"<<itc->second << "\n";
+            //fprintf(stderr,"%llu\t%Lf\n",itc->first,itc->second*bbtime[itc->first]);
+        }
+//    }
 }
