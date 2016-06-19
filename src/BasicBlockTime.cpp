@@ -1,4 +1,5 @@
 #include <llvm/Pass.h>
+#include <llvm/IR/Module.h>
 #include <llvm/IR/BasicBlock.h>
 #include <llvm/Support/raw_ostream.h>
 #include <llvm/IR/Instruction.h>
@@ -14,12 +15,27 @@ uint64_t bbid = 0;
 /*enum {LShr,Sub,Or,Shl,Xor,Add,AShr,And,PtrToInt,BitCast,GetElementPtr,ICmp,UIToFP,Select,Mul,FAdd,IntToPtr,ZExt,SExt,Trunc,
       FSub,FCmp,SIToFP,FPToUI,FPToSI,FMul,Alloca,FPExt,FPTrunc,UDiv,SDiv,URem,}*/
 namespace{
-    struct BBTime:public FunctionPass{
+    struct BBTime:public ModulePass{
         static char ID;
-        BBTime():FunctionPass(ID) {}
-        bool runOnFunction(Function &f) override
+        BBTime():ModulePass(ID) {}
+        bool runOnModule(Module &M) override
         {
-            if(f.getName()=="MAIN__")
+            LLVMContext &Context = M.getContext();
+            Type *int64ty = Type::getInt64Ty(Context);
+            Constant *FuncEntry1 = M.getOrInsertFunction("getBBTime",Type::getVoidTy(Context),int64ty,NULL);
+            for(Module::iterator itefunc=M.begin(),endfunc=f.end();itefunc!=endfunc;++itefunc)
+            {
+                Function &f = *itefunc;
+                for(Function::iterator itebb=f.begin(),endbb=f.end();itebb!=endbb;++itebb)
+                {
+                    BasicBlock &bb = *itebb;
+                    Instruction *first = &*(bb.getFirstInsertionPt());
+                    Instruction *last = &*(--(bb.end()));
+                    for(Instruction *iteinst=first;iteinst!=last;)
+                }
+            }
+            /*errs() << f.getName() << "\n";
+            if(f.getName()!="MAIN__")
             {
                 Module *M = f.getParent();
                 LLVMContext &Context = f.getContext();
@@ -43,7 +59,7 @@ namespace{
                         CallInst::Create(FuncEntry,"",last); 
                     }
                 }
-            }
+            }*/
            
             return true;
         }
