@@ -20,95 +20,54 @@ namespace{
         BBTime():ModulePass(ID) {}
         bool runOnModule(Module &M) override
         {
-            Module::FunctionListType &funclist = M.getFunctionList();
             LLVMContext &Context = M.getContext();
             Type *int64ty = Type::getInt64Ty(Context);
             Constant *FuncEntry1 = M.getOrInsertFunction("getBBTime",Type::getVoidTy(Context),int64ty,NULL);
             Value *args[1] = {ConstantInt::get(int64ty,bbid)};
             
-            for(Module::FunctionListType::iterator ite=funclist.begin(),end=funclist.end();ite!=end;++ite)
-            {
-                Function &f = *ite;
-                if(M.getFunction(f.getName())!=nullptr) errs() << f.getName() << "\n";
-            }           
-            
             for(Module::iterator itefunc=M.begin(),endfunc=M.end();itefunc!=endfunc;++itefunc)
             {
                 Function &f = *itefunc;
-                
                 if(f.getName()=="main") continue;
-
+                if(f.isDeclaration()) continue;
                 for(Function::iterator itebb=f.begin(),endbb=f.end();itebb!=endbb;++itebb)
                 {
                     BasicBlock &bb = *itebb;
-                    errs() << bb.getName() << "\n";
-                    Instruction *first = &*(bb.getFirstInsertionPt());
+                    BasicBlock::iterator itet = bb.getFirstInsertionPt();
+                    Instruction *first = &*itet;
                     Instruction *last = &*(--(bb.end()));
-                    errs() << "can u reach there\n";
                     if(first==last) continue;
-                    while(isInsideCall(first,funclist)) { ++first; }
-                    CallInst::Create(FuncEntry1,args,"",first);
-                    errs() << "###1\n";
-                    for(Instruction *iteinst=first;iteinst<=last;++iteinst)
+                    while(isInsideCall((Instruction*)itet)) { ++itet; }
+                    CallInst::Create(FuncEntry1,args,"",(Instruction*)itet);
+                    while(((Instruction*)itet)<=last)
                     {
-                        errs() << "###2\n";
-                        if(isInsideCall(iteinst,funclist))
+                        if(isInsideCall((Instruction*)itet))
                         {
-                            errs() << "###3\n";
-                             CallInst::Create(FuncEntry1,args,"",iteinst++);
+                             CallInst::Create(FuncEntry1,args,"",(Instruction*)itet);
+                             ++itet;
                              ++bbid;    
                              args[0] = {ConstantInt::get(int64ty,bbid)};
-                             while(isInsideCall(iteinst,funclist)) { ++iteinst; }
-                             if(iteinst==last) continue;
-                             CallInst::Create(FuncEntry1,args,"",iteinst);
+                             while(isInsideCall((Instruction*)itet)) { ++itet; }
+                             if(((Instruction*)itet)==last) { ++itet; continue; }
+                             CallInst::Create(FuncEntry1,args,"",(Instruction*)itet);
                         }
-                        else if(iteinst==last)
+                        else if(((Instruction*)itet)==last)
                         {
-                            CallInst::Create(FuncEntry1,args,"",iteinst);
+                            errs() << "insert before last instruction\n";
+                            CallInst::Create(FuncEntry1,args,"",(Instruction*)itet);
                         }
+                        ++itet;
                     }
                 }
             }
-            /*errs() << f.getName() << "\n";
-            if(f.getName()!="MAIN__")
-            {
-                Module *M = f.getParent();
-                LLVMContext &Context = f.getContext();
-                Type *int64ty = Type::getInt64Ty(Context);
-                Constant *FuncEntry1 = M->getOrInsertFunction("getBBTime",Type::getVoidTy(Context),int64ty,NULL);
-                for(Function::iterator ite=f.begin(), end=f.end();ite!=end;ite++)
-                {
-                    BasicBlock &bb = *ite;
-                    Instruction *first = &*(bb.getFirstInsertionPt());
-                    Instruction *last  = &*(--(bb.end()));
-                    Value *args[1] = {ConstantInt::get(int64ty,bbid)};
-                    bbid++;
-                    if(first!=last)
-                    {
-                        CallInst::Create(FuncEntry1,args,"",first);
-                        CallInst::Create(FuncEntry1,args,"",last);
-                    }
-                    if(std::string(last->getOpcodeName())=="ret")
-                    {
-                        Constant *FuncEntry=M->getOrInsertFunction("outinfo",Type::getVoidTy(Context),NULL,NULL);
-                        CallInst::Create(FuncEntry,"",last); 
-                    }
-                }
-            }*/
-           
             return true;
         }
-        bool  isInsideCall(Instruction *inst, Module::FunctionListType &funclist)
+
+        bool  isInsideCall(Instruction *inst)
         {
-            if(std::string(inst->getOpcodeName())!="call") return false;
             CallInst *callfunc = (CallInst *)inst;
-            std::string str = callfunc->getCalledFunction()->getName();
-            for(Module::FunctionListType::iterator ite=funclist.begin(),end=funclist.end();ite!=end;++ite)
-            {
-                Function &f = *ite;
-                if(str==f.getName()) return true;
-            }
-            return false;
+            if(std::string(inst->getOpcodeName())!="call" || callfunc->getCalledFunction()==nullptr ) return false;
+            return !(callfunc->getCalledFunction()->isDeclaration());
         }
     };
 }
