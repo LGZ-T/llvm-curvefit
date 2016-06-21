@@ -11,7 +11,7 @@
 
 using namespace llvm;
 
-uint64_t bbid = 0;
+uint64_t bbid = -1;
 /*enum {LShr,Sub,Or,Shl,Xor,Add,AShr,And,PtrToInt,BitCast,GetElementPtr,ICmp,UIToFP,Select,Mul,FAdd,IntToPtr,ZExt,SExt,Trunc,
       FSub,FCmp,SIToFP,FPToUI,FPToSI,FMul,Alloca,FPExt,FPTrunc,UDiv,SDiv,URem,}*/
 namespace{
@@ -23,7 +23,8 @@ namespace{
             LLVMContext &Context = M.getContext();
             Type *int64ty = Type::getInt64Ty(Context);
             Constant *FuncEntry1 = M.getOrInsertFunction("getBBTime",Type::getVoidTy(Context),int64ty,NULL);
-            Value *args[1] = {ConstantInt::get(int64ty,bbid)};
+            Value *args[1];
+            int phiinstcount = 0;
             
             for(Module::iterator itefunc=M.begin(),endfunc=M.end();itefunc!=endfunc;++itefunc)
             {
@@ -32,12 +33,32 @@ namespace{
                 if(f.isDeclaration()) continue;
                 for(Function::iterator itebb=f.begin(),endbb=f.end();itebb!=endbb;++itebb)
                 {
+                    phiinstcount = 0;
                     BasicBlock &bb = *itebb;
+                    for(BasicBlock::iterator tbegin=bb.begin();;++tbegin)
+                    {
+                        Instruction &tinst = *tbegin;
+                        if(std::string(tinst.getOpcodeName())=="phi") 
+                            ++phiinstcount;
+                        else break;
+                    }
                     BasicBlock::iterator itet = bb.getFirstInsertionPt();
                     Instruction *first = &*itet;
                     Instruction *last = &*(--(bb.end()));
                     if(first==last) continue;
+                    if(bb.size()-phiinstcount == 2)
+                    {
+                        if(std::string(first->getOpcodeName())=="call" && !isInsideCall(first))
+                        {
+                            args[0] = {ConstantInt::get(int64ty,++bbid)};
+                            CallInst::Create(FuncEntry1,args,"",first);
+                            CallInst::Create(FuncEntry1,args,"",last);
+                        }
+                        continue;
+                    }
+
                     while(isInsideCall((Instruction*)itet)) { ++itet; }
+                    args[0] = {ConstantInt::get(int64ty,++bbid)};
                     CallInst::Create(FuncEntry1,args,"",(Instruction*)itet);
                     while(((Instruction*)itet)!=last)
                     {
@@ -45,10 +66,9 @@ namespace{
                         {
                              CallInst::Create(FuncEntry1,args,"",(Instruction*)itet);
                              ++itet;
-                             ++bbid;    
-                             args[0] = {ConstantInt::get(int64ty,bbid)};
                              while(isInsideCall((Instruction*)itet)) { ++itet; }
                              if(((Instruction*)itet)==last) { ++itet; continue; }
+                             args[0] = {ConstantInt::get(int64ty,++bbid)};
                              CallInst::Create(FuncEntry1,args,"",(Instruction*)itet);
                         }
                         ++itet;
