@@ -39,7 +39,7 @@ namespace{
                     if(first==last) continue;
                     while(isInsideCall((Instruction*)itet)) { ++itet; }
                     CallInst::Create(FuncEntry1,args,"",(Instruction*)itet);
-                    while(((Instruction*)itet)<=last)
+                    while(((Instruction*)itet)!=last)
                     {
                         if(isInsideCall((Instruction*)itet))
                         {
@@ -51,18 +51,24 @@ namespace{
                              if(((Instruction*)itet)==last) { ++itet; continue; }
                              CallInst::Create(FuncEntry1,args,"",(Instruction*)itet);
                         }
-                        else if(((Instruction*)itet)==last)
+                        ++itet;
+                        if(((Instruction*)itet)==last)
                         {
                             errs() << "insert before last instruction\n";
                             CallInst::Create(FuncEntry1,args,"",(Instruction*)itet);
                         }
-                        ++itet;
                     }
                 }
             }
             return true;
         }
-
+        
+        /*
+         * if the instruction is not a call, then return false;
+         * if the instruction is a call inst, but i cannot get the callee(see llvm document for getCalledFunction),
+         * return false;
+         * if the instruction is a call inst, and the callee is defined in the module.return true;
+         */
         bool  isInsideCall(Instruction *inst)
         {
             CallInst *callfunc = (CallInst *)inst;
