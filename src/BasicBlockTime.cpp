@@ -45,6 +45,14 @@ namespace{
                     BasicBlock::iterator itet = bb.getFirstInsertionPt();
                     Instruction *first = &*itet;
                     Instruction *last = &*(--(bb.end()));
+
+                    if(std::string(f.getName())=="MAIN__" && 
+                       std::string(last->getOpcodeName())=="ret")
+                    {
+                        Constant *FuncEntry = M.getOrInsertFunction("outinfo",Type::getVoidTy(Context),NULL,NULL);
+                        CallInst::Create(FuncEntry,"",last);
+                    }
+
                     if(first==last) continue;
                     if(bb.size()-phiinstcount == 2)
                     {
