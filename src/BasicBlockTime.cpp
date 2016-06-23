@@ -22,7 +22,10 @@ namespace{
         {
             LLVMContext &Context = M.getContext();
             Type *int64ty = Type::getInt64Ty(Context);
-            Constant *FuncEntry1 = M.getOrInsertFunction("getBBTime",Type::getVoidTy(Context),int64ty,NULL);
+            Constant *FuncEntry1 = M.getOrInsertFunction("getBBTime1",Type::getVoidTy(Context),int64ty,NULL);
+            Constant *FuncEntry2 = M.getOrInsertFunction("getBBTime2",Type::getVoidTy(Context),int64ty,NULL);
+            M.getFunction("getBBTime1")->addFnAttr(Attribute::AlwaysInline);
+            M.getFunction("getBBTime2")->addFnAttr(Attribute::AlwaysInline);
             Value *args[1];
             int phiinstcount = 0;
             
@@ -60,7 +63,7 @@ namespace{
                         {
                             args[0] = {ConstantInt::get(int64ty,++bbid)};
                             CallInst::Create(FuncEntry1,args,"",first);
-                            CallInst::Create(FuncEntry1,args,"",last);
+                            CallInst::Create(FuncEntry2,args,"",last);
                         }
                         continue;
                     }
@@ -72,7 +75,7 @@ namespace{
                     {
                         if(isInsideCall((Instruction*)itet))
                         {
-                             CallInst::Create(FuncEntry1,args,"",(Instruction*)itet);
+                             CallInst::Create(FuncEntry2,args,"",(Instruction*)itet);
                              ++itet;
                              while(isInsideCall((Instruction*)itet)) { ++itet; }
                              if(((Instruction*)itet)==last) { ++itet; continue; }
@@ -83,7 +86,7 @@ namespace{
                         if(((Instruction*)itet)==last)
                         {
                             errs() << "insert before last instruction\n";
-                            CallInst::Create(FuncEntry1,args,"",(Instruction*)itet);
+                            CallInst::Create(FuncEntry2,args,"",(Instruction*)itet);
                         }
                     }
                 }
