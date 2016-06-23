@@ -6,7 +6,7 @@
 #include <time.h>
 
 #define CPUT 0.37037
-#define MAXBB 1000
+#define MAXBB 2000
 
 typedef unsigned long long ulonglong;
 
