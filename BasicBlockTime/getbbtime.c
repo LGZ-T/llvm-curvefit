@@ -7,7 +7,7 @@
 
 #define CPUT 0.37037
 #define MAXBB 2000
-
+#define FIRST 10
 typedef unsigned long long ulonglong;
 
 /** @return Hz **/
@@ -47,17 +47,29 @@ static inline ulonglong timing(void)
 ulonglong bbcount[MAXBB];
 long double bbtime[MAXBB];
 ulonglong cycle1, cycle2;
+int limit = 0;
+int prebbid = 0;
 
 void getBBTime1(ulonglong bbid)
 {
-    cycle1 = timing();
+    if(bbid!=prebbid)
+    {
+        limit = 0;
+        prebbid = bbid;
+    }
+    if(limit<=FIRST)
+        cycle1 = timing();
 }
 
 void getBBTime2(ulonglong bbid)
 {
-    cycle2 = timing();
-    cycle2 -= cycle1;
-    bbtime[bbid] = (bbcount[bbid]*bbtime[bbid]+cycle2)/bbcount[bbid];
+    if(limit<=FIRST)
+    {
+        cycle2 = timing();
+        cycle2 -= cycle1;
+        bbtime[bbid] = (bbcount[bbid]*bbtime[bbid]+cycle2)/bbcount[bbid];
+        ++limit;
+    }
     ++bbcount[bbid];
 }
 
