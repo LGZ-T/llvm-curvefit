@@ -8,6 +8,7 @@
 #include <llvm/IR/Constants.h>
 #include <llvm/IR/Module.h>
 #include <llvm/IR/Function.h>
+#include <llvm/IR/ValueSymbolTable.h>
 
 using namespace llvm;
 
@@ -29,6 +30,40 @@ namespace{
             M.getFunction("getBBTime2")->addFnAttr(Attribute::AlwaysInline);
             Value *args[1];
             int phiinstcount = 0, continue_inst = 0;
+            
+            /*if the process related variable is not a global variable,then it must
+             * be defined in the main function
+             */
+            //GlobalVariable * gvar = M.getGlobalVariable("nprocs");
+            //if(gvar!=nullptr)
+            //{
+            //    for(User *u : gvar->users())
+            //    {
+            //        if(Instruction *inst = dyn_cast<Instruction>(u))
+            //        {
+            //            errs() << inst->getParent()->getParent()->getName() << "##" << inst->getParent()->getName() 
+            //                   << "##" << *inst << "\n";
+            //        }
+            //    }
+            //}
+            //else
+            //{
+            //    Function *f = M.getFunction("MAIN__");
+            //    const ValueSymbolTable & vsymboltable = f->getValueSymbolTable();
+            //    Value *lvar = vsymboltable.lookup("nprocs");
+            //    if(lvar==nullptr) errs() << "not found\n";
+            //    else
+            //    {
+            //        for(User *u : lvar->users())
+            //        {
+            //            if(Instruction *inst = dyn_cast<Instruction>(u))
+            //            {
+            //                errs() << inst->getParent()->getParent()->getName() << "##" << inst->getParent()->getName() 
+            //                   << "##" << *inst << "\n";
+            //            }
+            //        }
+            //    }
+            //}
             
             for(Module::iterator itefunc=M.begin(),endfunc=M.end();itefunc!=endfunc;++itefunc)
             {
