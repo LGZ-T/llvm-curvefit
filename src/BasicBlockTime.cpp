@@ -17,7 +17,7 @@ uint64_t bbid = -1;
 namespace{
     struct BBTime:public ModulePass{
         static char ID;
-        enum inst_type {reg_inst, incall_inst, outcall_inst};
+        enum inst_type {reg_inst, incall_inst, mpicall_inst, outcall_inst};
         BBTime():ModulePass(ID) {}
         bool runOnModule(Module &M) override
         {
@@ -28,7 +28,8 @@ namespace{
             M.getFunction("getBBTime1")->addFnAttr(Attribute::AlwaysInline);
             M.getFunction("getBBTime2")->addFnAttr(Attribute::AlwaysInline);
             Value *args[1];
-            int phiinstcount = 0, continue_inst = 0;
+            int phiinstcount = 0, continue_inst = 0, copycount=0, basicblockcount=0;
+            bool isoktocopy=true;
             
             for(Module::iterator itefunc=M.begin(),endfunc=M.end();itefunc!=endfunc;++itefunc)
             {
@@ -39,6 +40,7 @@ namespace{
                 {
                     phiinstcount = 0;
                     continue_inst = 0;
+                    isoktocopy = true;
                     BasicBlock &bb = *itebb;
                     for(BasicBlock::iterator tbegin=bb.begin();;++tbegin)
                     {
@@ -83,10 +85,18 @@ namespace{
                         {
                             continue_inst=5;
                         }
+                        else if(temp_inst_type==mpicall_inst)
+                        {
+                            isoktocopy = false;
+                            continue_inst=5;
+                        }
                         else
                         {
                             if(continue_inst>4)
                             {
+                                if(isoktocopy) ++copycount;
+                                isoktocopy = true;
+                                ++basicblockcount;
                                  args[0] = {ConstantInt::get(int64ty,++bbid)};
                                  CallInst::Create(FuncEntry1,args,"",first);
                                  CallInst::Create(FuncEntry2,args,"",(Instruction*)itet);
@@ -102,6 +112,7 @@ namespace{
                         {
                             if(continue_inst>4)
                             {
+                                if(isoktocopy) ++copycount;
                                 args[0] = {ConstantInt::get(int64ty,++bbid)};
                                 CallInst::Create(FuncEntry1,args,"",first);
                                 CallInst::Create(FuncEntry2,args,"",(Instruction*)itet);
@@ -110,7 +121,8 @@ namespace{
                     }
                 }
             }
-            errs() << "bbid is: " << bbid << "\n";
+            errs() << "bbid is: " << bbid << "\ncopy count: " << copycount <<"\n";
+            errs() << "bbcount: " << basicblockcount << "\n";
             return true;
         }
         
@@ -124,8 +136,12 @@ namespace{
         {
             CallInst *callfunc = (CallInst *)inst;
             if(std::string(inst->getOpcodeName())!="call") return reg_inst;
-            else if(callfunc->getCalledFunction()==nullptr) return outcall_inst;
-            else if(callfunc->getCalledFunction()->isDeclaration()) return outcall_inst;
+            else if(callfunc->getCalledFunction()==nullptr) return mpicall_inst;
+            else if(callfunc->getCalledFunction()->isDeclaration()) 
+            {
+                //errs() << callfunc->getCalledFunction()->getName() << "\n";
+                return outcall_inst;
+            }
             else return incall_inst;
         }
     };
