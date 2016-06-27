@@ -18,7 +18,7 @@ uint64_t bbid = -1;
 namespace{
     struct BBTime:public ModulePass{
         static char ID;
-        enum inst_type {reg_inst, incall_inst, outcall_inst};
+        enum inst_type {reg_inst, incall_inst, mpicall_inst, outcall_inst};
         BBTime():ModulePass(ID) {}
         bool runOnModule(Module &M) override
         {
@@ -72,6 +72,9 @@ namespace{
                 if(f.isDeclaration()) continue;
                 for(Function::iterator itebb=f.begin(),endbb=f.end();itebb!=endbb;++itebb)
                 {
+                    Function::iterator tempite = itebb;
+                    ++tempite;
+                    
                     phiinstcount = 0;
                     continue_inst = 0;
                     BasicBlock &bb = *itebb;
@@ -85,6 +88,8 @@ namespace{
                     BasicBlock::iterator itet = bb.getFirstInsertionPt();
                     Instruction *first = &*itet;
                     Instruction *last = &*(--(bb.end()));
+                    last->eraseFromParent();
+                    BranchInst.Create((++tempite))
 
                     if(std::string(f.getName())=="MAIN__" && 
                        std::string(last->getOpcodeName())=="ret")
@@ -159,7 +164,7 @@ namespace{
         {
             CallInst *callfunc = (CallInst *)inst;
             if(std::string(inst->getOpcodeName())!="call") return reg_inst;
-            else if(callfunc->getCalledFunction()==nullptr) return outcall_inst;
+            else if(callfunc->getCalledFunction()==nullptr) return mpicall_inst;
             else if(callfunc->getCalledFunction()->isDeclaration()) return outcall_inst;
             else return incall_inst;
         }
