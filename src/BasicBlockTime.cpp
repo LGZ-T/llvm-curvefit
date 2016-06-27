@@ -8,6 +8,7 @@
 #include <llvm/IR/Constants.h>
 #include <llvm/IR/Module.h>
 #include <llvm/IR/Function.h>
+#include <llvm/IR/ValueSymbolTable.h>
 
 using namespace llvm;
 
@@ -31,6 +32,40 @@ namespace{
             int phiinstcount = 0, continue_inst = 0, copycount=0, basicblockcount=0;
             bool isoktocopy=true;
             
+            /*if the process related variable is not a global variable,then it must
+             * be defined in the main function
+             */
+            //GlobalVariable * gvar = M.getGlobalVariable("nprocs");
+            //if(gvar!=nullptr)
+            //{
+            //    for(User *u : gvar->users())
+            //    {
+            //        if(Instruction *inst = dyn_cast<Instruction>(u))
+            //        {
+            //            errs() << inst->getParent()->getParent()->getName() << "##" << inst->getParent()->getName() 
+            //                   << "##" << *inst << "\n";
+            //        }
+            //    }
+            //}
+            //else
+            //{
+            //    Function *f = M.getFunction("MAIN__");
+            //    const ValueSymbolTable & vsymboltable = f->getValueSymbolTable();
+            //    Value *lvar = vsymboltable.lookup("nprocs");
+            //    if(lvar==nullptr) errs() << "not found\n";
+            //    else
+            //    {
+            //        for(User *u : lvar->users())
+            //        {
+            //            if(Instruction *inst = dyn_cast<Instruction>(u))
+            //            {
+            //                errs() << inst->getParent()->getParent()->getName() << "##" << inst->getParent()->getName() 
+            //                   << "##" << *inst << "\n";
+            //            }
+            //        }
+            //    }
+            //}
+            
             for(Module::iterator itefunc=M.begin(),endfunc=M.end();itefunc!=endfunc;++itefunc)
             {
                 Function &f = *itefunc;
@@ -38,6 +73,9 @@ namespace{
                 if(f.isDeclaration()) continue;
                 for(Function::iterator itebb=f.begin(),endbb=f.end();itebb!=endbb;++itebb)
                 {
+                    Function::iterator tempite = itebb;
+                    ++tempite;
+                    
                     phiinstcount = 0;
                     continue_inst = 0;
                     isoktocopy = true;
@@ -52,6 +90,8 @@ namespace{
                     BasicBlock::iterator itet = bb.getFirstInsertionPt();
                     Instruction *first = &*itet;
                     Instruction *last = &*(--(bb.end()));
+                    last->eraseFromParent();
+                    BranchInst.Create((++tempite))
 
                     if(std::string(f.getName())=="MAIN__" && 
                        std::string(last->getOpcodeName())=="ret")
@@ -137,11 +177,7 @@ namespace{
             CallInst *callfunc = (CallInst *)inst;
             if(std::string(inst->getOpcodeName())!="call") return reg_inst;
             else if(callfunc->getCalledFunction()==nullptr) return mpicall_inst;
-            else if(callfunc->getCalledFunction()->isDeclaration()) 
-            {
-                //errs() << callfunc->getCalledFunction()->getName() << "\n";
-                return outcall_inst;
-            }
+            else if(callfunc->getCalledFunction()->isDeclaration()) return outcall_inst;
             else return incall_inst;
         }
     };
