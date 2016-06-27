@@ -71,27 +71,46 @@ namespace{
                 Function &f = *itefunc;
                 if(f.getName()=="main") continue;
                 if(f.isDeclaration()) continue;
+                errs() << f.getName() << "\n";
                 for(Function::iterator itebb=f.begin(),endbb=f.end();itebb!=endbb;++itebb)
                 {
                     Function::iterator tempite = itebb;
                     ++tempite;
-                    
+                    if(tempite==endbb) continue;
+                  
                     phiinstcount = 0;
                     continue_inst = 0;
                     isoktocopy = true;
                     BasicBlock &bb = *itebb;
-                    for(BasicBlock::iterator tbegin=bb.begin();;++tbegin)
+                    errs() << "---" << bb.getName() << "\n";
+                    Instruction *last = &*(--(bb.end()));
+                    last->eraseFromParent();
+                    BranchInst::Create((BasicBlock*)tempite,&bb);
+                    last = &*(--(bb.end()));
+
+                    while(true)
+                    {
+                        BasicBlock::iterator it = bb.begin();
+                        Instruction &ins = *it;
+                        if(std::string(ins.getOpcodeName())=="phi")
+                        {
+                            ins.eraseFromParent();
+                            errs() << "------delete\n";
+                        }
+                        else break;
+                    }
+                    /*for(BasicBlock::iterator tbegin=bb.begin();;++tbegin)
                     {
                         Instruction &tinst = *tbegin;
                         if(std::string(tinst.getOpcodeName())=="phi") 
                             ++phiinstcount;
                         else break;
-                    }
-                    BasicBlock::iterator itet = bb.getFirstInsertionPt();
+                    }*/
+                    
+                    /*BasicBlock::iterator itet = bb.getFirstInsertionPt();
                     Instruction *first = &*itet;
-                    Instruction *last = &*(--(bb.end()));
-                    last->eraseFromParent();
-                    BranchInst.Create((++tempite))
+                    last = &*(--(bb.end()));
+                    
 
                     if(std::string(f.getName())=="MAIN__" && 
                        std::string(last->getOpcodeName())=="ret")
@@ -158,7 +177,7 @@ namespace{
                                 CallInst::Create(FuncEntry2,args,"",(Instruction*)itet);
                             }
                         }
-                    }
+                    }*/
                 }
             }
             errs() << "bbid is: " << bbid << "\ncopy count: " << copycount <<"\n";
