@@ -85,13 +85,16 @@ int main()
     ofs.close();
 
     ifs.open("change.ll");
+    ofs.open("finalchange.ll");
     int k, h;
-    perinst[0] = '\0';
+    preinst[0] = '\0';
+    cout << "find changen\n" << endl;
     ifs.getline(s,999);
     while(!ifs.eof())
     {
-        if(s[0]=='"')
+        if(s[0]=='"' || (s[0]=='r' && s[1]=='e' && s[2]=='t') || (s[0]=='e' && s[1]=='n' && s[2]=='t'))
         {
+            cout << s << endl;
             restru.push_back(string(s));
             while(true)
             {
@@ -104,35 +107,46 @@ int main()
             while(str[k]==' ' || str[k]=='\t') ++k;
             if(str[k]=='u' && str[k+1]=='n' && str[k+2]=='r')
             {
-                restru.clear();
-                ifs.getline(s,999);
-                ifs.getline(s,999);
+
+                while(true) 
+                {
+                    ifs.getline(s,999);
+                    if(s[0]!='\0') break;
+                }
+
                 k = 0;
                 while(s[k]!=':') ++k;
                 s[k] = '\0';
-                k = 0;
-                while(preinst[k]!='"') ++k;
                 h = 0;
-                while(s[h]!='\0')
-                {
-                    preinst[k+h] = s[h];
-                    ++h;
-                }
-                preinst[k+h]='\0';
-                ofs << preinst << "\n" << endl;
-                s[h] = ':';
-                s[h+1] = '\0';
-                continue;
-            }
-            else
-            {
+                while(preinst[h]!='%') ++h;
+                //preinst[h+1] = '\0';
+                ofs << preinst.substr(0,h+1)+string(s) << "\n" << endl;
+                s[k] = ':';
+                preinst[0] = '\0';
                 for(list<string>::iterator it=restru.begin(),end=restru.end();it!=end;++it)
                 {
                     ofs << *it << endl;
                 }
                 ofs << endl;
-                preinst = *(restru.end());
                 restru.clear();
+                continue;
+            }
+            else
+            {
+                list<string>::iterator end = restru.end();
+                --end;
+                if(preinst[0]!='\0')
+                    ofs << preinst << "\n" << endl;
+                for(list<string>::iterator it=restru.begin();it!=end;++it)
+                {
+                    ofs << *it << endl;
+                }
+                cout << "restru.back() is:" << *end << endl;
+                preinst = *end;
+                cout << "preinst is:" << preinst << endl;
+                if(preinst[0]=='}') {ofs << preinst << "\n" << endl; preinst[0] = '\0';}
+                restru.clear();
+                cout << "is this" << endl;
             }
         }
         else
@@ -142,6 +156,7 @@ int main()
        ifs.getline(s,999);
     }
     ifs.close();
+    ofs.close();
 
     return 0;
 }
