@@ -74,42 +74,18 @@ namespace{
                 errs() << f.getName() << "\n";
                 for(Function::iterator itebb=f.begin(),endbb=f.end();itebb!=endbb;++itebb)
                 {
-                    Function::iterator tempite = itebb;
-                    ++tempite;
-                    if(tempite==endbb) continue;
-                  
-                    phiinstcount = 0;
-                    continue_inst = 0;
-                    isoktocopy = true;
                     BasicBlock &bb = *itebb;
-                    errs() << "---" << bb.getName() << "\n";
-                    Instruction *last = &*(--(bb.end()));
-                    last->eraseFromParent();
-                    BranchInst::Create((BasicBlock*)tempite,&bb);
-                    last = &*(--(bb.end()));
-
-                    while(true)
-                    {
-                        BasicBlock::iterator it = bb.begin();
-                        Instruction &ins = *it;
-                        if(std::string(ins.getOpcodeName())=="phi")
-                        {
-                            ins.eraseFromParent();
-                            errs() << "------delete\n";
-                        }
-                        else break;
-                    }
-                    /*for(BasicBlock::iterator tbegin=bb.begin();;++tbegin)
+                    for(BasicBlock::iterator tbegin=bb.begin();;++tbegin)
                     {
                         Instruction &tinst = *tbegin;
                         if(std::string(tinst.getOpcodeName())=="phi") 
                             ++phiinstcount;
                         else break;
-                    }*/
+                    }
                     
-                    /*BasicBlock::iterator itet = bb.getFirstInsertionPt();
+                    BasicBlock::iterator itet = bb.getFirstInsertionPt();
                     Instruction *first = &*itet;
-                    last = &*(--(bb.end()));
+                    Instruction *last = &*(--(bb.end()));
                     
 
                     if(std::string(f.getName())=="MAIN__" && 
@@ -144,17 +120,10 @@ namespace{
                         {
                             continue_inst=5;
                         }
-                        else if(temp_inst_type==mpicall_inst)
-                        {
-                            isoktocopy = false;
-                            continue_inst=5;
-                        }
                         else
                         {
-                            if(continue_inst>4)
+                            if(continue_inst>=3)
                             {
-                                if(isoktocopy) ++copycount;
-                                isoktocopy = true;
                                 ++basicblockcount;
                                  args[0] = {ConstantInt::get(int64ty,++bbid)};
                                  CallInst::Create(FuncEntry1,args,"",first);
@@ -171,13 +140,12 @@ namespace{
                         {
                             if(continue_inst>4)
                             {
-                                if(isoktocopy) ++copycount;
                                 args[0] = {ConstantInt::get(int64ty,++bbid)};
                                 CallInst::Create(FuncEntry1,args,"",first);
                                 CallInst::Create(FuncEntry2,args,"",(Instruction*)itet);
                             }
                         }
-                    }*/
+                    }
                 }
             }
             errs() << "bbid is: " << bbid << "\ncopy count: " << copycount <<"\n";
@@ -195,7 +163,7 @@ namespace{
         {
             CallInst *callfunc = (CallInst *)inst;
             if(std::string(inst->getOpcodeName())!="call") return reg_inst;
-            else if(callfunc->getCalledFunction()==nullptr) return mpicall_inst;
+            else if(callfunc->getCalledFunction()==nullptr) return outcall_inst;
             else if(callfunc->getCalledFunction()->isDeclaration()) return outcall_inst;
             else return incall_inst;
         }
