@@ -148,8 +148,8 @@ namespace{
                     }
                 }
             }
-            errs() << "bbid is: " << bbid << "\ncopy count: " << copycount <<"\n";
-            errs() << "bbcount: " << basicblockcount << "\n";
+            //errs() << "bbid is: " << bbid << "\ncopy count: " << copycount <<"\n";
+            //errs() << "bbcount: " << basicblockcount << "\n";
             return true;
         }
         
