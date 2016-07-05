@@ -52,6 +52,7 @@ insttype getinsttype(string &str)
         return regu_no_assign;
 }
 
+int flag[3000];
 int main()
 {
     char line[1000];
@@ -73,14 +74,34 @@ int main()
                 insts.push_back(string(line));
                 ifs.getline(line,1000);
             }
+            list<string>::iterator ite = insts.begin();
+            list<string>::iterator end = insts.end();
+            vector<string> search;
+            while(ite!=end)
+            {
+                ++ite;
+                string &str = *ite;
+                if(str.find("phi")!=string::npos) //do something special;
+                int length = str.length();
+
+                for(int i=0;i<length;++i)
+                {
+                    if(str[i]=='%' && str[i+1]>='0' && str[i+1]<='9')
+                    {
+                        ++i;
+                        while(str[i]>='0' && str[i]<='9')
+                        {
+                            
+                        }
+                    }
+                }
+            }
         }
         else 
         {
             //do something;
             continue;
         }
-        list<string>::iterator ite = insts.begin();
-        list<string>::iterator end = insts.end();
         while(ite!=end)
         {
             insttype type = getinsttype(*ite);

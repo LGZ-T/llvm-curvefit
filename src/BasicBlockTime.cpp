@@ -75,6 +75,7 @@ namespace{
                 for(Function::iterator itebb=f.begin(),endbb=f.end();itebb!=endbb;++itebb)
                 {
                     BasicBlock &bb = *itebb;
+                    errs() << bb.getName() << "\n";
                     for(BasicBlock::iterator tbegin=bb.begin();;++tbegin)
                     {
                         Instruction &tinst = *tbegin;
@@ -98,7 +99,7 @@ namespace{
                     if(first==last) continue;
                     if(bb.size()-phiinstcount == 2)
                     {
-                        if(std::string(first->getOpcodeName())=="call" && my_inst_type(first)!=incall_inst)
+                        if(std::string(first->getOpcodeName())=="call" && my_inst_type(first,M)!=incall_inst)
                         {
                             args[0] = {ConstantInt::get(int64ty,++bbid)};
                             CallInst::Create(FuncEntry1,args,"",first);
@@ -107,11 +108,11 @@ namespace{
                         continue;
                     }
 
-                    while(my_inst_type((Instruction*)itet)==incall_inst) { ++itet; }
+                    while(my_inst_type((Instruction*)itet,M)==incall_inst) { ++itet; }
                     first = (Instruction*)itet;
                     while(((Instruction*)itet)!=last)
                     {
-                        inst_type temp_inst_type = my_inst_type((Instruction*)itet);
+                        inst_type temp_inst_type = my_inst_type((Instruction*)itet,M);
                         if(temp_inst_type==reg_inst)
                         {
                             ++continue_inst;
@@ -130,7 +131,7 @@ namespace{
                                  CallInst::Create(FuncEntry2,args,"",(Instruction*)itet);
                             }
                             ++itet;
-                            while(my_inst_type((Instruction*)itet)==incall_inst) { ++itet; }
+                            while(my_inst_type((Instruction*)itet,M)==incall_inst) { ++itet; }
                             if(((Instruction*)itet)==last) { ++itet; continue; }
                             first = (Instruction*)itet;
                             continue_inst = 0;
@@ -159,13 +160,32 @@ namespace{
          * return outcall_inst;
          * if the instruction is a call inst, and the callee is defined in the module.return incall_inst;
          */
-        inst_type  my_inst_type(Instruction *inst)
+        inst_type  my_inst_type(Instruction *inst,Module &M)
         {
             CallInst *callfunc = (CallInst *)inst;
             if(std::string(inst->getOpcodeName())!="call") return reg_inst;
-            else if(callfunc->getCalledFunction()==nullptr) return outcall_inst;
-            else if(callfunc->getCalledFunction()->isDeclaration()) return outcall_inst;
-            else return incall_inst;
+            if(callfunc->getCalledFunction()==nullptr) 
+            {
+                std::string inststr;
+                raw_string_ostream inststream(inststr); 
+                callfunc->getCalledValue()->print(inststream);
+                std::string temp = inststream.str();
+                unsigned int pos = temp.find("@"), length=0;
+                if(pos==std::string::npos) errs() << "wrong activity\n";
+                ++pos;
+                while(temp[pos]!=' ')
+                {
+                    ++length;
+                    ++pos;
+                }
+                Function *func = M.getFunction(temp.substr(pos-length,length));
+                if(func==nullptr) errs() << "that is a wrong function name: " << temp.substr(pos-length,length) << "\n";
+                if(func->isDeclaration()) return outcall_inst;
+                else return incall_inst;
+            }
+            if(callfunc->getCalledFunction()->isDeclaration()) return outcall_inst;
+            
+            return incall_inst;
         }
     };
 }
