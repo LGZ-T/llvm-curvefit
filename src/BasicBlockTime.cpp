@@ -75,6 +75,7 @@ namespace{
                 for(Function::iterator itebb=f.begin(),endbb=f.end();itebb!=endbb;++itebb)
                 {
                     BasicBlock &bb = *itebb;
+                    phiinstcount = 0;
                     errs() << bb.getName() << "\n";
                     for(BasicBlock::iterator tbegin=bb.begin();;++tbegin)
                     {
@@ -97,7 +98,7 @@ namespace{
                     }
 
                     if(first==last) continue;
-                    if(bb.size()-phiinstcount == 2)
+                    if(bb.size()-phiinstcount <= 2)
                     {
                         if(std::string(first->getOpcodeName())=="call" && my_inst_type(first,M)!=incall_inst)
                         {
@@ -170,7 +171,7 @@ namespace{
                 raw_string_ostream inststream(inststr); 
                 callfunc->getCalledValue()->print(inststream);
                 std::string temp = inststream.str();
-                unsigned int pos = temp.find("@"), length=0;
+                std::size_t pos = temp.find("@"), length=0;
                 if(pos==std::string::npos) errs() << "wrong activity\n";
                 ++pos;
                 while(temp[pos]!=' ')

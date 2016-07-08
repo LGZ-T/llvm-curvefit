@@ -9,10 +9,10 @@ using namespace std;
 enum insttype { bbname, getbbtime1, getbbtime2, 
                 regu_no_assign, regu_with_assign, 
                 outcall, brinst, call_with_assign,
-                define, declare, phi};
+                define, declare, phi, unreachable};
 
 map<string,string> rettype;
-set<string> inhand;
+set<string> deffunc;
 
 insttype getinsttype(string &str)
 {
@@ -22,16 +22,17 @@ insttype getinsttype(string &str)
     {
         return bbname;
     }
-    else if(str.find("phi ")!=string::npos)                                 return phi;
-    else if(str[0]=='d' && str[1]=='e' && str[2]=='f' && str[3]=='i')       return define;
-    else if(str[0]=='d' && str[1]=='e' && str[2]=='c' && str[4]=='l')       return declare;
-    else if(str.compare(0,23,"  call void @getBBTime1")==0)                 return getbbtime1;
-    else if(str.compare(0,23,"  call void @getBBTime2")==0)                 return getbbtime2;
-    else if(str.find("call")!=string::npos && str.find("=")!=string::npos)  return call_with_assign;
-    else if(str.find("call")!=string::npos)                                 return outcall;
-    else if(str.find("=")!=string::npos)                                    return regu_with_assign;
-    else if(str.find("  br ")!=string::npos)                                return brinst;
-    else                                                                    return regu_no_assign;
+    else if(str.find("phi ")!=string::npos)                                      return phi;
+    else if(str[0]=='d' && str[1]=='e' && str[2]=='f' && str[3]=='i')            return define;
+    else if(str[0]=='d' && str[1]=='e' && str[2]=='c' && str[3]=='l')            return declare;
+    else if(str[2]=='u' && str[3]=='n' && str[4]=='r' && str[5]=='e')            return unreachable;
+    else if(str.compare(0,23,"  call void @getBBTime1")==0)                      return getbbtime1;
+    else if(str.compare(0,23,"  call void @getBBTime2")==0)                      return getbbtime2;
+    else if(str.find("call ")!=string::npos && str.find(" = ")!=string::npos)    return call_with_assign;
+    else if(str.find("call ")!=string::npos)                                     return outcall;
+    else if(str.find(" = ")!=string::npos)                                       return regu_with_assign;
+    else if(str.find("  br ")!=string::npos)                                     return brinst;
+    else                                                                         return regu_no_assign;
 }
 
 int flag[3000];
@@ -49,33 +50,56 @@ int main()
         insttype type = getinsttype(linestr);
         if(type==define || type==declare)
         {
-            string temp;
+            string temp("#");
             string tname(line);
             char name[100];
             int i = 6;
             while(line[i]!='@')
             {
                 if(line[i]=='v' && line[i+1]=='o' && line[i+2]=='i' && line[i+3]=='d')
+                { 
                     temp = "void";
+                    i += 4;
+                }
                 else if(line[i]=='i' && line[i+1]=='3' && line[i+2]=='2')
+                {
                     temp = "i32";
+                    i += 3;
+                }
                 else if(line[i]=='f' && line[i+1]=='l' && line[i+2]=='o')
+                {
                     temp = "float";
+                    i += 5;
+                }
                 else if(line[i]=='d' && line[i+1]=='o' && line[i+2]=='u')
+                {
                     temp = "double";
+                    i += 6;
+                }
                 else if(line[i]=='i' && line[i+1]=='6' && line[i+2]=='4')
+                {
                     temp = "i64";
-                else temp = "unhandle";
-                ++i;
+                    i += 4;
+                }
+                else 
+                { 
+                    if(temp=="#")
+                        temp = "unhandle"; 
+                    ++i; 
+                }
             }
             ++i;
             unsigned int pos = tname.find("(");
             string funcname = tname.substr(i,pos-i);
             rettype.insert(pair<string,string>(funcname,temp));
+            if(type==define)  deffunc.insert(funcname);
         }
         ifs.getline(line,1000);
     }
-
+    for(set<string>::iterator site=deffunc.begin(),eite=deffunc.end();site!=eite;++site)
+    {
+        cout << "##" << *site << "##" << endl;
+    }
     ifs.close();
     ifs.open("cgpop.bbtime.ll");
 
@@ -107,6 +131,8 @@ int main()
        while(ite!=end)
        {
            insttype type = getinsttype(*ite);
+            //cout << "out call is ##" << *ite << "##" << endl;
+            //cout << "type is ##" << type << endl;
            if(type==getbbtime1)
            {
                print = true;
@@ -140,6 +166,20 @@ int main()
            {
                print = false;
                string &temp = *ite;
+
+               size_t spos = temp.find("@");
+               if(spos==string::npos) cout << "line 155: wrong for the call inst" << endl;
+               ++spos;
+               size_t epos = temp.find('(',spos);
+               epos = temp.find(' ',spos)<epos?temp.find(' ',spos):epos;
+               string funcname = temp.substr(spos,epos-spos);
+               set<string>::iterator setit;
+                if((setit=deffunc.find(funcname))!=deffunc.end())
+                {
+                    deffunc.erase(setit);
+                    ++ite;
+                    continue;
+                }
                if(temp.find("@free")==string::npos)
                {
                    ite = insts.erase(ite);
@@ -151,27 +191,35 @@ int main()
                print = false;
                string &temp = *ite;
                string  tempinst;
-               size_t spos = temp.find("@"), epos;
-               if(spos==string::npos) cout << "wrong for the call inst" << endl;
+               size_t spos = temp.find("@");
+               if(spos==string::npos) cout << "line 155: wrong for the call inst" << endl;
                ++spos;
-               epos = temp.find(" ",spos);
+               size_t epos = temp.find('(',spos);
+               epos = temp.find(' ',spos)<epos?temp.find(' ',spos):epos;
                string funcname = temp.substr(spos,epos-spos);
+               set<string>::iterator setit;
+                if((setit=deffunc.find(funcname))!=deffunc.end())
+                {
+                    deffunc.erase(setit);
+                    ++ite;
+                    continue;
+                }
                map<string,string>::iterator it = rettype.find(funcname);
-               if(it==rettype.end()) cout << "wrong for the map" << endl;
+               if(it==rettype.end()) cout << "line 160: wrong for the map#" << funcname << "#" << endl;
                spos = temp.find("=");
-               tempinst = temp.substr(0,spos);
+               tempinst = temp.substr(0,spos+1);
                if(it->second=="i32")           { tempinst.append(" add i32 10, 10"); *ite = tempinst; }
                else if(it->second=="float")    { tempinst.append(" add float 10.0, 10.0"); *ite = tempinst; }
                else if(it->second=="double")   { tempinst.append(" add double 10.0, 10.0"); *ite = tempinst; }
                else if(it->second=="i64")      { tempinst.append(" add i64 10, 10"); *ite = tempinst; }
-               else if(it->second=="void")     cout << "it's not possible" << endl;
+               else if(it->second=="void")     cout << "line 167: it's not possible" << endl;
                else if(it->second=="unhandle") ;
-               else                            cout << "wrong" << endl;
+               else                            cout << "line 169: wrong" << endl;
            }
-           else if(type==brinst)
+           else if(type==brinst || type==unreachable)
            {
                //the bb name will be outputed by the next bbname
-               *ite = "br label %";
+               *ite = "  br label %";
                brpos = ite;
            }
            else if(type==bbname)
@@ -183,7 +231,7 @@ int main()
            }
            else
            {
-               cout << "wrong inst" << endl;
+               //cout << "line 186: wrong inst" << endl;
            }
            ++ite;
        }
@@ -196,6 +244,12 @@ int main()
        insts.clear();
        ofs << "}" << endl << endl;
        ifs.getline(line,1000);
+    }
+    if(deffunc.size()>=1) cerr << "wrong in set#" << deffunc.size() << "#" << endl;
+
+    for(set<string>::iterator site=deffunc.begin(),eite=deffunc.end();site!=eite;++site)
+    {
+        cout << "##" << *site << "##" << endl;
     }
     ifs.close();
     ofs.close();
