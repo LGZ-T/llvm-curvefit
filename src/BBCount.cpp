@@ -1,10 +1,11 @@
 #include <llvm/Pass.h>
+#include <ValueProfiling.h>
+#include <llvm/Support/raw_ostream.h>
 #include <llvm/IR/Module.h>
 #include <llvm/IR/BasicBlock.h>
-#include <llvm/Support/raw_ostream.h>
 #include <llvm/IR/Instruction.h>
 #include <llvm/IR/Instructions.h>
-#include <ValueProfiling.h>
+#include <llvm/IR/IRBuilder.h>
 #include <llvm/IR/Constants.h>
 #include <llvm/IR/Module.h>
 #include <llvm/IR/Function.h>
@@ -12,7 +13,6 @@
 
 using namespace llvm;
 
-uint64_t bbid = -1;
 /*enum {LShr,Sub,Or,Shl,Xor,Add,AShr,And,PtrToInt,BitCast,GetElementPtr,ICmp,UIToFP,Select,Mul,FAdd,IntToPtr,ZExt,SExt,Trunc,
       FSub,FCmp,SIToFP,FPToUI,FPToSI,FMul,Alloca,FPExt,FPTrunc,UDiv,SDiv,URem,}*/
 namespace{
@@ -20,12 +20,13 @@ namespace{
         static char ID;
         enum inst_type {reg_inst, incall_inst, mpicall_inst, outcall_inst};
         BBCount():ModulePass(ID) {}
-        static void IncrementBlockCounters(Value* Inc, unsigned Index, GlobalVariable* Counters, IRBuilder<>& Builder)
+        static void IncrementBlockCounters(llvm::Value* Inc, unsigned Index, 
+                             GlobalVariable* Counters, IRBuilder<>& Builder)
         {
             LLVMContext &Context = Inc->getContext();
             std::vector<Constant*> Indices(2);
             Indices[0] = Constant::getNullValue(Type::getInt32Ty(Context));
-            Indices[1] = Constant::get(Type::getInt32Ty(Context), Index);
+            Indices[1] = ConstantInt::get(Type::getInt32Ty(Context), Index);
             Constant *ElementPtr = ConstantExpr::getGetElementPtr(Counters, Indices);
 
             Value* OldVal = Builder.CreateLoad(ElementPtr, "OldBlockCounter");
@@ -37,17 +38,17 @@ namespace{
 
         bool runOnModule(Module &M) override
         {
-            unsigned Idx = 0, NumBlocks = 0;
-            IRBuilder<> Builder(M.getContext());
+            uint64_t bbid = -1;
+            unsigned NumBlocks = 0;
+            LLVMContext &Context = M.getContext();
+            IRBuilder<> Builder(Context);
             
             Type* ATy = ArrayType::get(Type::getInt64Ty(M.getContext()),NumBlocks);
             GlobalVariable* Counters = new GlobalVariable(M, ATy, false,
                     GlobalVariable::InternalLinkage, Constant::getNullValue(ATy),
                     "BlockPredCounters");
-
-            int phiinstcount = 0, continue_inst = 0, copycount=0, basicblockcount=0;
-            bool isoktocopy=true;
-            
+            Constant * Inc = ConstantInt::get(Type::getInt32Ty(Context),1);
+            int phiinstcount = 0, continue_inst = 0;             
             for(Module::iterator itefunc=M.begin(),endfunc=M.end();itefunc!=endfunc;++itefunc)
             {
                 Function &f = *itefunc;
@@ -67,8 +68,9 @@ namespace{
                     
                     BasicBlock::iterator itet = bb.getFirstInsertionPt();
                     Instruction *first = &*itet;
+                    Instruction *bbstart = first;
                     Instruction *last = &*(--(bb.end()));
-                    
+                    bool insert = false;                    
 
                     if(std::string(f.getName())=="MAIN__" && 
                        std::string(last->getOpcodeName())=="ret")
@@ -83,13 +85,12 @@ namespace{
                         if(std::string(first->getOpcodeName())=="call" && my_inst_type(first,M)!=incall_inst)
                         {
                             Builder.SetInsertPoint(first);
-                            IncrementBlockCounters()
+                            IncrementBlockCounters(Inc, ++bbid, Counters, Builder);
                         }
                         continue;
                     }
 
                     while(my_inst_type((Instruction*)itet,M)==incall_inst) { ++itet; }
-                    first = (Instruction*)itet;
                     while(((Instruction*)itet)!=last)
                     {
                         inst_type temp_inst_type = my_inst_type((Instruction*)itet,M);
@@ -105,25 +106,31 @@ namespace{
                         {
                             if(continue_inst>=3)
                             {
-                                ++basicblockcount;
-                                 args[0] = {ConstantInt::get(int64ty,++bbid)};
-                                 CallInst::Create(FuncEntry1,args,"",first);
-                                 CallInst::Create(FuncEntry2,args,"",(Instruction*)itet);
+                                ++bbid;
+                                if(!insert)
+                                {
+                                    Builder.SetInsertPoint(bbstart);
+                                    IncrementBlockCounters(Inc, bbid, Counters, Builder);
+                                    insert = true;
+                                }
                             }
                             ++itet;
                             while(my_inst_type((Instruction*)itet,M)==incall_inst) { ++itet; }
                             if(((Instruction*)itet)==last) { ++itet; continue; }
-                            first = (Instruction*)itet;
                             continue_inst = 0;
                         }
                         ++itet;
                         if(((Instruction*)itet)==last)
                         {
-                            if(continue_inst>4)
+                            if(continue_inst>=3)
                             {
-                                args[0] = {ConstantInt::get(int64ty,++bbid)};
-                                CallInst::Create(FuncEntry1,args,"",first);
-                                CallInst::Create(FuncEntry2,args,"",(Instruction*)itet);
+                                ++bbid;
+                                if(!insert)
+                                {
+                                    Builder.SetInsertPoint(bbstart);
+                                    IncrementBlockCounters(Inc,bbid,Counters,Builder);
+                                    insert = true;
+                                }
                             }
                         }
                     }

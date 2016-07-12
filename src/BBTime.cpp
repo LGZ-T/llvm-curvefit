@@ -12,7 +12,6 @@
 
 using namespace llvm;
 
-uint64_t bbid = -1;
 /*enum {LShr,Sub,Or,Shl,Xor,Add,AShr,And,PtrToInt,BitCast,GetElementPtr,ICmp,UIToFP,Select,Mul,FAdd,IntToPtr,ZExt,SExt,Trunc,
       FSub,FCmp,SIToFP,FPToUI,FPToSI,FMul,Alloca,FPExt,FPTrunc,UDiv,SDiv,URem,}*/
 namespace{
@@ -22,6 +21,7 @@ namespace{
         BBTime():ModulePass(ID) {}
         bool runOnModule(Module &M) override
         {
+            uint64_t bbid = -1;
             LLVMContext &Context = M.getContext();
             Type *int64ty = Type::getInt64Ty(Context);
             Constant *FuncEntry1 = M.getOrInsertFunction("getBBTime1",Type::getVoidTy(Context),int64ty,NULL);
@@ -29,8 +29,7 @@ namespace{
             M.getFunction("getBBTime1")->addFnAttr(Attribute::AlwaysInline);
             M.getFunction("getBBTime2")->addFnAttr(Attribute::AlwaysInline);
             Value *args[1];
-            int phiinstcount = 0, continue_inst = 0, copycount=0, basicblockcount=0;
-            bool isoktocopy=true;
+            int phiinstcount = 0, continue_inst = 0;
             
             for(Module::iterator itefunc=M.begin(),endfunc=M.end();itefunc!=endfunc;++itefunc)
             {
@@ -90,7 +89,6 @@ namespace{
                         {
                             if(continue_inst>=3)
                             {
-                                ++basicblockcount;
                                  args[0] = {ConstantInt::get(int64ty,++bbid)};
                                  CallInst::Create(FuncEntry1,args,"",first);
                                  CallInst::Create(FuncEntry2,args,"",(Instruction*)itet);

@@ -22,7 +22,8 @@ llvm_map_components_to_libraries(LLVM_PRED_LIBRARY bitreader analysis)
 
 add_library(MemoryModel SHARED
    ReuseDistance.cpp
-   BasicBlockTime.cpp
+   BBCount.cpp
+   BBTime.cpp
     )
 target_link_libraries(MemoryModel
 	${LLVM_DYNAMIC_LIBRARY}
