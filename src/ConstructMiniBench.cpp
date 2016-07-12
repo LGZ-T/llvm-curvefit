@@ -32,51 +32,15 @@ namespace{
             int phiinstcount = 0, continue_inst = 0, copycount=0, basicblockcount=0;
             bool isoktocopy=true;
             
-            /*if the process related variable is not a global variable,then it must
-             * be defined in the main function
-             */
-            //GlobalVariable * gvar = M.getGlobalVariable("nprocs");
-            //if(gvar!=nullptr)
-            //{
-            //    for(User *u : gvar->users())
-            //    {
-            //        if(Instruction *inst = dyn_cast<Instruction>(u))
-            //        {
-            //            errs() << inst->getParent()->getParent()->getName() << "##" << inst->getParent()->getName() 
-            //                   << "##" << *inst << "\n";
-            //        }
-            //    }
-            //}
-            //else
-            //{
-            //    Function *f = M.getFunction("MAIN__");
-            //    const ValueSymbolTable & vsymboltable = f->getValueSymbolTable();
-            //    Value *lvar = vsymboltable.lookup("nprocs");
-            //    if(lvar==nullptr) errs() << "not found\n";
-            //    else
-            //    {
-            //        for(User *u : lvar->users())
-            //        {
-            //            if(Instruction *inst = dyn_cast<Instruction>(u))
-            //            {
-            //                errs() << inst->getParent()->getParent()->getName() << "##" << inst->getParent()->getName() 
-            //                   << "##" << *inst << "\n";
-            //            }
-            //        }
-            //    }
-            //}
-            
             for(Module::iterator itefunc=M.begin(),endfunc=M.end();itefunc!=endfunc;++itefunc)
             {
                 Function &f = *itefunc;
                 if(f.getName()=="main") continue;
                 if(f.isDeclaration()) continue;
-                errs() << f.getName() << "\n";
                 for(Function::iterator itebb=f.begin(),endbb=f.end();itebb!=endbb;++itebb)
                 {
                     BasicBlock &bb = *itebb;
                     phiinstcount = 0;
-                    errs() << bb.getName() << "\n";
                     for(BasicBlock::iterator tbegin=bb.begin();;++tbegin)
                     {
                         Instruction &tinst = *tbegin;
@@ -150,8 +114,6 @@ namespace{
                     }
                 }
             }
-            //errs() << "bbid is: " << bbid << "\ncopy count: " << copycount <<"\n";
-            //errs() << "bbcount: " << basicblockcount << "\n";
             return true;
         }
         
