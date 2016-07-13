@@ -8,21 +8,48 @@
 #include <llvm/IR/Constants.h>
 #include <llvm/IR/Module.h>
 #include <llvm/IR/Function.h>
+#include <llvm/IR/IRBuilder.h>
 #include <llvm/IR/ValueSymbolTable.h>
 #include <llvm/Analysis/LoopInfo.h>
 #include <llvm/Analysis/LoopPass.h>
 using namespace llvm;
 
-/*enum {LShr,Sub,Or,Shl,Xor,Add,AShr,And,PtrToInt,BitCast,GetElementPtr,ICmp,UIToFP,Select,Mul,FAdd,IntToPtr,ZExt,SExt,Trunc,
-      FSub,FCmp,SIToFP,FPToUI,FPToSI,FMul,Alloca,FPExt,FPTrunc,UDiv,SDiv,URem,}*/
 namespace{
     struct BBTime:public ModulePass{
         static char ID;
-        enum inst_type {reg_inst, incall_inst, mpicall_inst, outcall_inst};
+        enum inst_type {reg_inst, incall_inst, mpicall_inst, outcall_inst};            
+        
         BBTime():ModulePass(ID) {}
-        void insertgetcyclecall(Function *getcycle, Instruction *inpos)
+        static void IncrementBlockCounters(llvm::Value* Inc, unsigned Index,
+                            GlobalVariable* Counters, IRBuilder<>& Builder)
         {
+            LLVMContext &Context = Inc->getContext();
+            std::vector<Constant*> Indices(2);
+            Indices[0] = Constant::getNullValue(Type::getInt32Ty(Context));
+            Indices[1] = ConstantInt::get(Type::getInt32Ty(Context),Index);
+            Constant *ElementPtr = ConstantExpr::getGetElementPtr(Counters,Indices);
 
+            Value *OldVal = Builder.CreateLoad(ElementPtr, "OldBlockCounter");
+            Value *NewVal = Builder.CreateAdd(OldVal,
+                    Builder.CreateZExtOrBitCast(Inc,Type::getInt64Ty(Context)),
+                    "NewBlockCounter");
+            Builder.CreateStore(NewVal, ElementPtr);
+        }
+
+        void insertgetcyclecall(Function *getcycle, Instruction *firstpos, Instruction *lastpos,
+                        GlobalVariable *cyclearray, unsigned bbid)
+        {
+            CallInst *cycle1 = CallInst::Create(getcycle,"",firstpos);            
+            CallInst *cycle2 = CallInst::Create(getcycle,"",lastpos);
+            BinaryOperator *sub = BinaryOperator::Create(Instruction::Sub,cycle2,cycle1,"",lastpos);
+            std::vector<Constant*> Indices(2);
+            LLVMContext &Context = sub->getContext();
+            Indices[0] = Constant::getNullValue(Type::getInt32Ty(Context));
+            Indices[1] = ConstantInt::get(Type::getInt32Ty(Context),bbid);
+            Constant *ElementPtr = ConstantExpr::getGetElementPtr(cyclearray,Indices);
+            LoadInst *loadinst = new LoadInst(ElementPtr,"",lastpos);
+            BinaryOperator *add = BinaryOperator::Create(Instruction::Add,loadinst,sub,"",lastpos);
+            StoreInst(add,ElementPtr,lastpos);
         }
         bool runOnModule(Module &M) override
         {
@@ -45,23 +72,24 @@ namespace{
             }*/
             LLVMContext &context = M.getContext();
             Type* ATy = ArrayType::get(Type::getInt64Ty(context),2000);
-            GlobalVariable* Counters = new GlobalVariable(M, ATy, false,
+            GlobalVariable* CountArray = new GlobalVariable(M, ATy, false,
                     GlobalVariable::ExternalLinkage, Constant::getNullValue(ATy),
-                    "BlockPredCycles");
-            GlobalVariable* Cycle1 = new GlobalVariable(M, Type::getInt64Ty(context),false,
+                    "BlockPredCount");
+            GlobalVariable* CycleArray = new GlobalVariable(M, ATy, false,
+                    GlobalVariable::ExternalLinkage, Constant::getNullValue(ATy),
+                    "BlockPredCycle");
+            Constant *Inc = ConstantInt::get(Type::getInt32Ty(context),1);
+            /*GlobalVariable* Cycle1 = new GlobalVariable(M, Type::getInt64Ty(context),false,
                     GlobalVariable::ExternalLinkage, ConstantInt::get(IntegerType::getInt64Ty(context),0),"Cycle1");
             GlobalVariable* Cycle2 = new GlobalVariable(M, Type::getInt64Ty(context),false,
                     GlobalVariable::ExternalLinkage, ConstantInt::get(IntegerType::getInt64Ty(context),0),"Cycle2");       
-            
+            */            
             uint64_t bbid = -1;
             LLVMContext &Context = M.getContext();
+            IRBuilder<> Builder(Context);
             Type *int64ty = Type::getInt64Ty(Context);
-            //Constant *FuncEntry1 = M.getOrInsertFunction("getBBTime1",Type::getVoidTy(Context),int64ty,NULL);
-            //Constant *FuncEntry2 = M.getOrInsertFunction("getBBTime2",Type::getVoidTy(Context),int64ty,NULL);
             Constant *GC = M.getOrInsertFunction("llvm.readcyclecounter",int64ty,NULL);
             Function *GetCycle = cast<Function>(GC);
-            //M.getFunction("getBBTime1")->addFnAttr(Attribute::AlwaysInline);
-            //M.getFunction("getBBTime2")->addFnAttr(Attribute::AlwaysInline);
             Value *args[1];
             int phiinstcount = 0, continue_inst = 0;
             
@@ -84,7 +112,9 @@ namespace{
                     
                     BasicBlock::iterator itet = bb.getFirstInsertionPt();
                     Instruction *first = &*itet;
+                    Instruction *bbstart = first;
                     Instruction *last = &*(--(bb.end()));
+                    bool insert = false;
                     
 
                     if(std::string(f.getName())=="MAIN__" && 
@@ -99,9 +129,9 @@ namespace{
                     {
                         if(std::string(first->getOpcodeName())=="call" && my_inst_type(first,M)!=incall_inst)
                         {
-                            args[0] = {ConstantInt::get(int64ty,++bbid)};
-                            CallInst::Create(FuncEntry1,args,"",first);
-                            CallInst::Create(FuncEntry2,args,"",last);
+                            Builder.SetInsertPoint(first);
+                            IncrementBlockCounters(Inc,++bbid, CountArray, Builder);
+                            insertgetcyclecall(GetCycle, first, last,CycleArray, bbid);
                         }
                         continue;
                     }
@@ -123,9 +153,14 @@ namespace{
                         {
                             if(continue_inst>=3)
                             {
-                                 args[0] = {ConstantInt::get(int64ty,++bbid)};
-                                 CallInst::Create(FuncEntry1,args,"",first);
-                                 CallInst::Create(FuncEntry2,args,"",(Instruction*)itet);
+                                ++bbid;
+                                if(!insert)
+                                {
+                                    Builder.SetInsertPoint(bbstart);
+                                    IncrementBlockCounters(Inc,bbid, CountArray, Builder);
+                                    insert = true;
+                                }
+                                insertgetcyclecall(GetCycle, first, last,CycleArray, bbid);
                             }
                             ++itet;
                             while(my_inst_type((Instruction*)itet,M)==incall_inst) { ++itet; }
@@ -136,11 +171,16 @@ namespace{
                         ++itet;
                         if(((Instruction*)itet)==last)
                         {
-                            if(continue_inst>4)
+                            if(continue_inst>=3)
                             {
-                                args[0] = {ConstantInt::get(int64ty,++bbid)};
-                                CallInst::Create(FuncEntry1,args,"",first);
-                                CallInst::Create(FuncEntry2,args,"",(Instruction*)itet);
+                                ++bbid;
+                                if(!insert)
+                                {
+                                    Builder.SetInsertPoint(bbstart);
+                                    IncrementBlockCounters(Inc,bbid, CountArray, Builder);
+                                    insert = true;
+                                }
+                                insertgetcyclecall(GetCycle, first, last,CycleArray, bbid);
                             }
                         }
                     }

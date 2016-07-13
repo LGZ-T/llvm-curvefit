@@ -63,19 +63,21 @@ void getBBTime2(ulonglong bbid)
 }
 
 extern ulonglong BlockPredCounters[MAXBB];
+extern ulonglong BlockPredCycle[MAXBB];
 void outinfo_bbtime()
 {
     char outstring[150];
     char hostname[100];
     int pid = getpid(), i;
+    double t = 0.1;
     gethostname(hostname,99);
     sprintf(outstring,"%s.%d.bbtimeout",hostname,pid);
     FILE *fp = fopen(outstring,"w");
     if(fp==NULL) { printf("open file wrong\n"); return; }
     for(i=0;i<MAXBB;++i)
     {
-        if(bbcount[i]==0) continue;
-        fprintf(fp,"%d\t%Lf\n",i,bbtime[i]);    
+        if(BlockPredCounters[i]==0) continue;
+        fprintf(fp,"%d\t%Lf\t%llu\n",i,bbtime[i]/(t*BlockPredCounters[i]),BlockPredCounters[i]);    
     }
     fclose(fp);
 }
