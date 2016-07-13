@@ -47,45 +47,52 @@ static inline ulonglong timing(void)
 ulonglong bbcount[MAXBB];
 long double bbtime[MAXBB];
 ulonglong cycle1, cycle2;
-int limit = 0;
 int prebbid = 0;
 
 void getBBTime1(ulonglong bbid)
 {
-    if(bbid!=prebbid)
-    {
-        limit = 0;
-        prebbid = bbid;
-    }
-    if(limit<=FIRST)
-        cycle1 = timing();
+    cycle1 = timing();
 }
 
 void getBBTime2(ulonglong bbid)
 {
-    if(limit<=FIRST)
-    {
-        cycle2 = timing();
-        cycle2 -= cycle1;
-        bbtime[bbid] = (bbcount[bbid]*bbtime[bbid]+cycle2)/bbcount[bbid];
-        ++limit;
-    }
+    cycle2 = timing();
+    cycle2 -= cycle1;
     ++bbcount[bbid];
+    bbtime[bbid] = ((bbcount[bbid]-1)*bbtime[bbid]+cycle2)/bbcount[bbid];
 }
 
-void outinfo()
+extern ulonglong BlockPredCounters[MAXBB];
+void outinfo_bbtime()
 {
     char outstring[150];
     char hostname[100];
     int pid = getpid(), i;
     gethostname(hostname,99);
-    sprintf(outstring,"%s.%d.out",hostname,pid);
+    sprintf(outstring,"%s.%d.bbtimeout",hostname,pid);
     FILE *fp = fopen(outstring,"w");
     if(fp==NULL) { printf("open file wrong\n"); return; }
     for(i=0;i<MAXBB;++i)
     {
         if(bbcount[i]==0) continue;
-        fprintf(fp,"%d\t%Lf\t%llu\n",i,bbtime[i],bbcount[i]);    
+        fprintf(fp,"%d\t%Lf\n",i,bbtime[i]);    
     }
     fclose(fp);
 }
+void outinfo_bbcount()
+{
+    char outstring[150];
+    char hostname[100];
+    int pid = getpid(), i;
+    gethostname(hostname,99);
+    sprintf(outstring,"%s.%d.bbcountout",hostname,pid);
+    FILE *fp = fopen(outstring,"w");
+    if(fp==NULL) { printf("open file wrong\n"); return; }
+    for(i=0;i<MAXBB;++i)
+    {
+        if(BlockPredCounters[i]==0) continue;
+        fprintf(fp,"%d\t%llu\n",i,BlockPredCounters[i]);    
+    }
+    fclose(fp);
+}
+

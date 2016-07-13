@@ -39,13 +39,17 @@ namespace{
         bool runOnModule(Module &M) override
         {
             uint64_t bbid = -1;
-            unsigned NumBlocks = 0;
+            unsigned NumBlocks = 2000;
             LLVMContext &Context = M.getContext();
             IRBuilder<> Builder(Context);
             
             Type* ATy = ArrayType::get(Type::getInt64Ty(M.getContext()),NumBlocks);
+            
+            //this will not insert a definition in the file
+            //GlobalVariable* Counters = new GlobalVariable(ATy, false, GlobalVariable::InternalLinkage,
+            //        Constant::getNullValue(ATy),"BlockPredCounters");
             GlobalVariable* Counters = new GlobalVariable(M, ATy, false,
-                    GlobalVariable::InternalLinkage, Constant::getNullValue(ATy),
+                    GlobalVariable::ExternalLinkage, Constant::getNullValue(ATy),
                     "BlockPredCounters");
             Constant * Inc = ConstantInt::get(Type::getInt32Ty(Context),1);
             int phiinstcount = 0, continue_inst = 0;             
@@ -75,7 +79,7 @@ namespace{
                     if(std::string(f.getName())=="MAIN__" && 
                        std::string(last->getOpcodeName())=="ret")
                     {
-                        Constant *FuncEntry = M.getOrInsertFunction("outinfo",Type::getVoidTy(Context),NULL,NULL);
+                        Constant *FuncEntry = M.getOrInsertFunction("outinfo_bbcount",Type::getVoidTy(Context),NULL,NULL);
                         CallInst::Create(FuncEntry,"",last);
                     }
 

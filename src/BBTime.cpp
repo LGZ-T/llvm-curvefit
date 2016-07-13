@@ -1,15 +1,16 @@
 #include <llvm/Pass.h>
+#include <ValueProfiling.h>
+#include <llvm/Support/raw_ostream.h>
 #include <llvm/IR/Module.h>
 #include <llvm/IR/BasicBlock.h>
-#include <llvm/Support/raw_ostream.h>
 #include <llvm/IR/Instruction.h>
 #include <llvm/IR/Instructions.h>
-#include <ValueProfiling.h>
 #include <llvm/IR/Constants.h>
 #include <llvm/IR/Module.h>
 #include <llvm/IR/Function.h>
 #include <llvm/IR/ValueSymbolTable.h>
-
+#include <llvm/Analysis/LoopInfo.h>
+#include <llvm/Analysis/LoopPass.h>
 using namespace llvm;
 
 /*enum {LShr,Sub,Or,Shl,Xor,Add,AShr,And,PtrToInt,BitCast,GetElementPtr,ICmp,UIToFP,Select,Mul,FAdd,IntToPtr,ZExt,SExt,Trunc,
@@ -19,15 +20,48 @@ namespace{
         static char ID;
         enum inst_type {reg_inst, incall_inst, mpicall_inst, outcall_inst};
         BBTime():ModulePass(ID) {}
+        void insertgetcyclecall(Function *getcycle, Instruction *inpos)
+        {
+
+        }
         bool runOnModule(Module &M) override
         {
+            /* this is for getting loop info
+            for(Module::iterator itefunc=M.begin(),endfunc=M.end();itefunc!=endfunc;++itefunc)
+            {
+                Function &f = *itefunc;
+                if(f.isDeclaration()) continue;
+                errs() << "in func " << f.getName() << ":\n";
+                LoopInfo &loopinfo = getAnalysis<LoopInfo>(f);
+                for(auto iteloop=loopinfo.begin(),endloop=loopinfo.end();iteloop!=endloop;++iteloop)
+                {
+                    Loop *loop = *iteloop;
+                    unsigned loopdepth = loop->getLoopDepth();
+                    errs() << "loop depth: " << loopdepth << "##";
+                    if(loop->getCanonicalInductionVariable()!=nullptr)
+                        errs() << "ok##" << *(loop->getCanonicalInductionVariable());
+                    errs() << "\n";
+                }
+            }*/
+            LLVMContext &context = M.getContext();
+            Type* ATy = ArrayType::get(Type::getInt64Ty(context),2000);
+            GlobalVariable* Counters = new GlobalVariable(M, ATy, false,
+                    GlobalVariable::ExternalLinkage, Constant::getNullValue(ATy),
+                    "BlockPredCycles");
+            GlobalVariable* Cycle1 = new GlobalVariable(M, Type::getInt64Ty(context),false,
+                    GlobalVariable::ExternalLinkage, ConstantInt::get(IntegerType::getInt64Ty(context),0),"Cycle1");
+            GlobalVariable* Cycle2 = new GlobalVariable(M, Type::getInt64Ty(context),false,
+                    GlobalVariable::ExternalLinkage, ConstantInt::get(IntegerType::getInt64Ty(context),0),"Cycle2");       
+            
             uint64_t bbid = -1;
             LLVMContext &Context = M.getContext();
             Type *int64ty = Type::getInt64Ty(Context);
-            Constant *FuncEntry1 = M.getOrInsertFunction("getBBTime1",Type::getVoidTy(Context),int64ty,NULL);
-            Constant *FuncEntry2 = M.getOrInsertFunction("getBBTime2",Type::getVoidTy(Context),int64ty,NULL);
-            M.getFunction("getBBTime1")->addFnAttr(Attribute::AlwaysInline);
-            M.getFunction("getBBTime2")->addFnAttr(Attribute::AlwaysInline);
+            //Constant *FuncEntry1 = M.getOrInsertFunction("getBBTime1",Type::getVoidTy(Context),int64ty,NULL);
+            //Constant *FuncEntry2 = M.getOrInsertFunction("getBBTime2",Type::getVoidTy(Context),int64ty,NULL);
+            Constant *GC = M.getOrInsertFunction("llvm.readcyclecounter",int64ty,NULL);
+            Function *GetCycle = cast<Function>(GC);
+            //M.getFunction("getBBTime1")->addFnAttr(Attribute::AlwaysInline);
+            //M.getFunction("getBBTime2")->addFnAttr(Attribute::AlwaysInline);
             Value *args[1];
             int phiinstcount = 0, continue_inst = 0;
             
@@ -56,7 +90,7 @@ namespace{
                     if(std::string(f.getName())=="MAIN__" && 
                        std::string(last->getOpcodeName())=="ret")
                     {
-                        Constant *FuncEntry = M.getOrInsertFunction("outinfo",Type::getVoidTy(Context),NULL,NULL);
+                        Constant *FuncEntry = M.getOrInsertFunction("outinfo_bbtime",Type::getVoidTy(Context),NULL,NULL);
                         CallInst::Create(FuncEntry,"",last);
                     }
 
@@ -113,6 +147,12 @@ namespace{
                 }
             }
             return true;
+        }
+
+        void getAnalysisUsage(AnalysisUsage &AU) const override
+        {
+            AU.addRequired<LoopInfo>();
+            AU.setPreservesAll();
         }
         
         /*
