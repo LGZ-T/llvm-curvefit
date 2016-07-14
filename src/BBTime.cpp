@@ -20,13 +20,13 @@ namespace{
         enum inst_type {reg_inst, incall_inst, mpicall_inst, outcall_inst};            
         
         BBTime():ModulePass(ID) {}
-        static void IncrementBlockCounters(llvm::Value* Inc, unsigned Index,
+        static void IncrementBlockCounters(llvm::Value* Inc, unsigned bbid,
                             GlobalVariable* Counters, IRBuilder<>& Builder)
         {
             LLVMContext &Context = Inc->getContext();
             std::vector<Constant*> Indices(2);
             Indices[0] = Constant::getNullValue(Type::getInt32Ty(Context));
-            Indices[1] = ConstantInt::get(Type::getInt32Ty(Context),Index);
+            Indices[1] = ConstantInt::get(Type::getInt32Ty(Context),bbid);
             Constant *ElementPtr = ConstantExpr::getGetElementPtr(Counters,Indices);
 
             Value *OldVal = Builder.CreateLoad(ElementPtr, "OldBlockCounter");
@@ -34,22 +34,29 @@ namespace{
                     Builder.CreateZExtOrBitCast(Inc,Type::getInt64Ty(Context)),
                     "NewBlockCounter");
             Builder.CreateStore(NewVal, ElementPtr);
+            return;
         }
 
-        void insertgetcyclecall(Function *getcycle, Instruction *firstpos, Instruction *lastpos,
-                        GlobalVariable *cyclearray, unsigned bbid)
+        static void insertgetcyclecall(Function *getcycle, unsigned bbid, 
+                        GlobalVariable *cyclearray, IRBuilder<>& Builder, bool isfirst)
         {
-            CallInst *cycle1 = CallInst::Create(getcycle,"",firstpos);            
-            CallInst *cycle2 = CallInst::Create(getcycle,"",lastpos);
-            BinaryOperator *sub = BinaryOperator::Create(Instruction::Sub,cycle2,cycle1,"",lastpos);
+            static CallInst *cycle1, *cycle2;
+            if(isfirst)
+            {
+                cycle1 = Builder.CreateCall(getcycle,"");
+                return;
+            }
+            cycle2 = Builder.CreateCall(getcycle,"");
+            Value *sub = Builder.CreateSub(cycle2,cycle1);
             std::vector<Constant*> Indices(2);
             LLVMContext &Context = sub->getContext();
             Indices[0] = Constant::getNullValue(Type::getInt32Ty(Context));
             Indices[1] = ConstantInt::get(Type::getInt32Ty(Context),bbid);
             Constant *ElementPtr = ConstantExpr::getGetElementPtr(cyclearray,Indices);
-            LoadInst *loadinst = new LoadInst(ElementPtr,"",lastpos);
-            BinaryOperator *add = BinaryOperator::Create(Instruction::Add,loadinst,sub,"",lastpos);
-            StoreInst(add,ElementPtr,lastpos);
+            LoadInst *loadinst = Builder.CreateLoad(ElementPtr,"");
+            Value *add = Builder.CreateAdd(loadinst,sub);
+            Builder.CreateStore(add,ElementPtr);
+            return;
         }
         bool runOnModule(Module &M) override
         {
@@ -90,7 +97,6 @@ namespace{
             Type *int64ty = Type::getInt64Ty(Context);
             Constant *GC = M.getOrInsertFunction("llvm.readcyclecounter",int64ty,NULL);
             Function *GetCycle = cast<Function>(GC);
-            Value *args[1];
             int phiinstcount = 0, continue_inst = 0;
             
             for(Module::iterator itefunc=M.begin(),endfunc=M.end();itefunc!=endfunc;++itefunc)
@@ -98,9 +104,11 @@ namespace{
                 Function &f = *itefunc;
                 if(f.getName()=="main") continue;
                 if(f.isDeclaration()) continue;
+                errs() << "func name##" << f.getName() << "##\n";
                 for(Function::iterator itebb=f.begin(),endbb=f.end();itebb!=endbb;++itebb)
                 {
                     BasicBlock &bb = *itebb;
+                    errs() << "BB name##" << bb.getName() << "##\n";
                     phiinstcount = 0;
                     for(BasicBlock::iterator tbegin=bb.begin();;++tbegin)
                     {
@@ -112,9 +120,8 @@ namespace{
                     
                     BasicBlock::iterator itet = bb.getFirstInsertionPt();
                     Instruction *first = &*itet;
-                    Instruction *bbstart = first;
                     Instruction *last = &*(--(bb.end()));
-                    bool insert = false;
+                    bool hasinserted = false;
                     
 
                     if(std::string(f.getName())=="MAIN__" && 
@@ -130,16 +137,20 @@ namespace{
                         if(std::string(first->getOpcodeName())=="call" && my_inst_type(first,M)!=incall_inst)
                         {
                             Builder.SetInsertPoint(first);
-                            IncrementBlockCounters(Inc,++bbid, CountArray, Builder);
-                            insertgetcyclecall(GetCycle, first, last,CycleArray, bbid);
+                            IncrementBlockCounters(Inc,++bbid,CountArray,Builder);
+                            insertgetcyclecall(GetCycle,bbid,CycleArray,Builder,true);
+                            Builder.SetInsertPoint(last);
+                            insertgetcyclecall(GetCycle,bbid,CycleArray,Builder,false);
                         }
                         continue;
                     }
 
                     while(my_inst_type((Instruction*)itet,M)==incall_inst) { ++itet; }
                     first = (Instruction*)itet;
+                    Instruction *bbstart = first;
                     while(((Instruction*)itet)!=last)
                     {
+                        errs() << "Inst##" << *((Instruction*)itet) << "##\n";
                         inst_type temp_inst_type = my_inst_type((Instruction*)itet,M);
                         if(temp_inst_type==reg_inst)
                         {
@@ -154,13 +165,16 @@ namespace{
                             if(continue_inst>=3)
                             {
                                 ++bbid;
-                                if(!insert)
+                                if(!hasinserted)
                                 {
                                     Builder.SetInsertPoint(bbstart);
-                                    IncrementBlockCounters(Inc,bbid, CountArray, Builder);
-                                    insert = true;
+                                    IncrementBlockCounters(Inc,bbid,CountArray,Builder);
+                                    hasinserted = true;
                                 }
-                                insertgetcyclecall(GetCycle, first, last,CycleArray, bbid);
+                                Builder.SetInsertPoint(first);
+                                insertgetcyclecall(GetCycle,bbid,CycleArray,Builder,true);
+                                Builder.SetInsertPoint(itet);
+                                insertgetcyclecall(GetCycle,bbid,CycleArray,Builder,false);
                             }
                             ++itet;
                             while(my_inst_type((Instruction*)itet,M)==incall_inst) { ++itet; }
@@ -174,13 +188,20 @@ namespace{
                             if(continue_inst>=3)
                             {
                                 ++bbid;
-                                if(!insert)
+                                if(!hasinserted)
                                 {
+                                    errs() << "about to insert bbcount\n";
                                     Builder.SetInsertPoint(bbstart);
                                     IncrementBlockCounters(Inc,bbid, CountArray, Builder);
-                                    insert = true;
+                                    errs() << "insert bbcout is done\n";
+                                    hasinserted = true;
                                 }
-                                insertgetcyclecall(GetCycle, first, last,CycleArray, bbid);
+                                errs() << "about to isnert bbtime\n";
+                                Builder.SetInsertPoint(first);
+                                insertgetcyclecall(GetCycle,bbid,CycleArray,Builder,true);
+                                Builder.SetInsertPoint(last);
+                                insertgetcyclecall(GetCycle,bbid,CycleArray,Builder,false);
+                                errs() << "insert bbtime is done\n";
                             }
                         }
                     }
@@ -189,11 +210,11 @@ namespace{
             return true;
         }
 
-        void getAnalysisUsage(AnalysisUsage &AU) const override
+        /*void getAnalysisUsage(AnalysisUsage &AU) const override
         {
             AU.addRequired<LoopInfo>();
             AU.setPreservesAll();
-        }
+        }*/
         
         /*
          * if the instruction is not a call, then return reg_inst;
