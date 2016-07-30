@@ -50,7 +50,7 @@ namespace{
             //        Constant::getNullValue(ATy),"BlockPredCounters");
             GlobalVariable* Counters = new GlobalVariable(M, ATy, false,
                     GlobalVariable::ExternalLinkage, Constant::getNullValue(ATy),
-                    "BlockPredCounters");
+                    "BlockPredCount");
             Constant * Inc = ConstantInt::get(Type::getInt32Ty(Context),1);
             int phiinstcount = 0, continue_inst = 0;             
             for(Module::iterator itefunc=M.begin(),endfunc=M.end();itefunc!=endfunc;++itefunc)
@@ -69,20 +69,18 @@ namespace{
                             ++phiinstcount;
                         else break;
                     }
-                    
+                   
                     BasicBlock::iterator itet = bb.getFirstInsertionPt();
                     Instruction *first = &*itet;
                     Instruction *bbstart = first;
                     Instruction *last = &*(--(bb.end()));
                     bool insert = false;                    
-
                     if(std::string(f.getName())=="MAIN__" && 
                        std::string(last->getOpcodeName())=="ret")
                     {
                         Constant *FuncEntry = M.getOrInsertFunction("outinfo_bbcount",Type::getVoidTy(Context),NULL,NULL);
                         CallInst::Create(FuncEntry,"",last);
                     }
-
                     if(first==last) continue;
                     if(bb.size()-phiinstcount <= 2)
                     {
@@ -93,7 +91,6 @@ namespace{
                         }
                         continue;
                     }
-
                     while(my_inst_type((Instruction*)itet,M)==incall_inst) { ++itet; }
                     while(((Instruction*)itet)!=last)
                     {
@@ -120,7 +117,7 @@ namespace{
                             }
                             ++itet;
                             while(my_inst_type((Instruction*)itet,M)==incall_inst) { ++itet; }
-                            if(((Instruction*)itet)==last) { ++itet; continue; }
+                            if(((Instruction*)itet)==last) { continue; }
                             continue_inst = 0;
                         }
                         ++itet;
