@@ -17,7 +17,7 @@ using namespace llvm;
 namespace{
     struct BBTime:public ModulePass{
         static char ID;
-        enum inst_type {reg_inst, incall_inst, mpicall_inst, outcall_inst};            
+        enum inst_type {reg_inst, incall_inst, mpicall_inst, outcall_inst, notfound};            
         
         BBTime():ModulePass(ID) {}
         static void IncrementBlockCounters(llvm::Value* Inc, unsigned bbid,
@@ -77,38 +77,35 @@ namespace{
                     errs() << "\n";
                 }
             }*/
-            LLVMContext &context = M.getContext();
-            Type* ATy = ArrayType::get(Type::getInt64Ty(context),2000);
+            uint64_t bbid = -1;
+            unsigned NumBlocks = 2000;
+            LLVMContext &Context = M.getContext();
+            IRBuilder<> Builder(Context);
+
+            Type* ATy = ArrayType::get(Type::getInt64Ty(Context),NumBlocks);
+
+            //this will not insert a definition in the file
             GlobalVariable* CountArray = new GlobalVariable(M, ATy, false,
                     GlobalVariable::ExternalLinkage, Constant::getNullValue(ATy),
                     "BlockPredCount");
             GlobalVariable* CycleArray = new GlobalVariable(M, ATy, false,
                     GlobalVariable::ExternalLinkage, Constant::getNullValue(ATy),
                     "BlockPredCycle");
-            Constant *Inc = ConstantInt::get(Type::getInt32Ty(context),1);
-            /*GlobalVariable* Cycle1 = new GlobalVariable(M, Type::getInt64Ty(context),false,
-                    GlobalVariable::ExternalLinkage, ConstantInt::get(IntegerType::getInt64Ty(context),0),"Cycle1");
-            GlobalVariable* Cycle2 = new GlobalVariable(M, Type::getInt64Ty(context),false,
-                    GlobalVariable::ExternalLinkage, ConstantInt::get(IntegerType::getInt64Ty(context),0),"Cycle2");       
-            */            
-            uint64_t bbid = -1;
-            LLVMContext &Context = M.getContext();
-            IRBuilder<> Builder(Context);
+
+            Constant *Inc = ConstantInt::get(Type::getInt32Ty(Context),1);
             Type *int64ty = Type::getInt64Ty(Context);
             Constant *GC = M.getOrInsertFunction("llvm.readcyclecounter",int64ty,NULL);
             Function *GetCycle = cast<Function>(GC);
+
             int phiinstcount = 0, continue_inst = 0;
-            
             for(Module::iterator itefunc=M.begin(),endfunc=M.end();itefunc!=endfunc;++itefunc)
             {
                 Function &f = *itefunc;
                 if(f.getName()=="main") continue;
                 if(f.isDeclaration()) continue;
-                errs() << "func name##" << f.getName() << "##\n";
                 for(Function::iterator itebb=f.begin(),endbb=f.end();itebb!=endbb;++itebb)
                 {
                     BasicBlock &bb = *itebb;
-                    errs() << "BB name##" << bb.getName() << "##\n";
                     phiinstcount = 0;
                     for(BasicBlock::iterator tbegin=bb.begin();;++tbegin)
                     {
@@ -150,7 +147,6 @@ namespace{
                     Instruction *bbstart = first;
                     while(((Instruction*)itet)!=last)
                     {
-                        errs() << "Inst##" << *((Instruction*)itet) << "##\n";
                         inst_type temp_inst_type = my_inst_type((Instruction*)itet,M);
                         if(temp_inst_type==reg_inst)
                         {
@@ -178,7 +174,7 @@ namespace{
                             }
                             ++itet;
                             while(my_inst_type((Instruction*)itet,M)==incall_inst) { ++itet; }
-                            if(((Instruction*)itet)==last) { ++itet; continue; }
+                            if(((Instruction*)itet)==last) { continue; }
                             first = (Instruction*)itet;
                             continue_inst = 0;
                         }
@@ -190,18 +186,14 @@ namespace{
                                 ++bbid;
                                 if(!hasinserted)
                                 {
-                                    errs() << "about to insert bbcount\n";
                                     Builder.SetInsertPoint(bbstart);
                                     IncrementBlockCounters(Inc,bbid, CountArray, Builder);
-                                    errs() << "insert bbcout is done\n";
                                     hasinserted = true;
                                 }
-                                errs() << "about to isnert bbtime\n";
                                 Builder.SetInsertPoint(first);
                                 insertgetcyclecall(GetCycle,bbid,CycleArray,Builder,true);
                                 Builder.SetInsertPoint(last);
                                 insertgetcyclecall(GetCycle,bbid,CycleArray,Builder,false);
-                                errs() << "insert bbtime is done\n";
                             }
                         }
                     }
@@ -233,7 +225,10 @@ namespace{
                 callfunc->getCalledValue()->print(inststream);
                 std::string temp = inststream.str();
                 std::size_t pos = temp.find("@"), length=0;
-                if(pos==std::string::npos) errs() << "wrong activity\n";
+
+                //this could happen when the callee is a func pointer
+                //for now, we just consider it as a incall_inst
+                if(pos==std::string::npos){ errs() << "callee is not found\n"; return incall_inst; }
                 ++pos;
                 while(temp[pos]!=' ')
                 {
@@ -241,12 +236,17 @@ namespace{
                     ++pos;
                 }
                 Function *func = M.getFunction(temp.substr(pos-length,length));
-                if(func==nullptr) errs() << "that is a wrong function name: " << temp.substr(pos-length,length) << "\n";
+                if(func==nullptr)
+                {
+                    errs() << "callee's name can not be found in the symbol table: "
+                           << temp.substr(pos-length,length) << "\n";
+                    return  notfound;
+                }
                 if(func->isDeclaration()) return outcall_inst;
                 else return incall_inst;
             }
-            if(callfunc->getCalledFunction()->isDeclaration()) return outcall_inst;
             
+            if(callfunc->getCalledFunction()->isDeclaration()) return outcall_inst;
             return incall_inst;
         }
     };

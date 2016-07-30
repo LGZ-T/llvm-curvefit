@@ -13,12 +13,10 @@
 
 using namespace llvm;
 
-/*enum {LShr,Sub,Or,Shl,Xor,Add,AShr,And,PtrToInt,BitCast,GetElementPtr,ICmp,UIToFP,Select,Mul,FAdd,IntToPtr,ZExt,SExt,Trunc,
-      FSub,FCmp,SIToFP,FPToUI,FPToSI,FMul,Alloca,FPExt,FPTrunc,UDiv,SDiv,URem,}*/
 namespace{
     struct BBCount:public ModulePass{
         static char ID;
-        enum inst_type {reg_inst, incall_inst, mpicall_inst, outcall_inst};
+        enum inst_type {reg_inst, incall_inst, mpicall_inst, outcall_inst, notfound};
         BBCount():ModulePass(ID) {}
         static void IncrementBlockCounters(llvm::Value* Inc, unsigned Index, 
                              GlobalVariable* Counters, IRBuilder<>& Builder)
@@ -46,8 +44,6 @@ namespace{
             Type* ATy = ArrayType::get(Type::getInt64Ty(M.getContext()),NumBlocks);
             
             //this will not insert a definition in the file
-            //GlobalVariable* Counters = new GlobalVariable(ATy, false, GlobalVariable::InternalLinkage,
-            //        Constant::getNullValue(ATy),"BlockPredCounters");
             GlobalVariable* Counters = new GlobalVariable(M, ATy, false,
                     GlobalVariable::ExternalLinkage, Constant::getNullValue(ATy),
                     "BlockPredCount");
@@ -74,7 +70,9 @@ namespace{
                     Instruction *first = &*itet;
                     Instruction *bbstart = first;
                     Instruction *last = &*(--(bb.end()));
-                    bool insert = false;                    
+                    bool hasinserted = false;                    
+
+
                     if(std::string(f.getName())=="MAIN__" && 
                        std::string(last->getOpcodeName())=="ret")
                     {
@@ -108,11 +106,11 @@ namespace{
                             if(continue_inst>=3)
                             {
                                 ++bbid;
-                                if(!insert)
+                                if(!hasinserted)
                                 {
                                     Builder.SetInsertPoint(bbstart);
                                     IncrementBlockCounters(Inc, bbid, Counters, Builder);
-                                    insert = true;
+                                    hasinserted = true;
                                 }
                             }
                             ++itet;
@@ -126,11 +124,11 @@ namespace{
                             if(continue_inst>=3)
                             {
                                 ++bbid;
-                                if(!insert)
+                                if(!hasinserted)
                                 {
                                     Builder.SetInsertPoint(bbstart);
                                     IncrementBlockCounters(Inc,bbid,Counters,Builder);
-                                    insert = true;
+                                    hasinserted = true;
                                 }
                             }
                         }
@@ -157,7 +155,10 @@ namespace{
                 callfunc->getCalledValue()->print(inststream);
                 std::string temp = inststream.str();
                 std::size_t pos = temp.find("@"), length=0;
-                if(pos==std::string::npos) errs() << "wrong activity\n";
+
+                //this could happen when the callee is a func pointer
+                //for now, we just consider it as a incall_inst
+                if(pos==std::string::npos) { errs() << "callee is not found\n"; return incall_inst; }
                 ++pos;
                 while(temp[pos]!=' ')
                 {
@@ -165,12 +166,16 @@ namespace{
                     ++pos;
                 }
                 Function *func = M.getFunction(temp.substr(pos-length,length));
-                if(func==nullptr) errs() << "that is a wrong function name: " << temp.substr(pos-length,length) << "\n";
+                if(func==nullptr) 
+                {
+                    errs() << "callee's name can not be found in the symbol table: " 
+                           << temp.substr(pos-length,length) << "\n";
+                    return notfound;
+                }
                 if(func->isDeclaration()) return outcall_inst;
                 else return incall_inst;
             }
             if(callfunc->getCalledFunction()->isDeclaration()) return outcall_inst;
-            
             return incall_inst;
         }
     };
