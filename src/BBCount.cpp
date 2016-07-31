@@ -48,11 +48,17 @@ namespace{
                     GlobalVariable::ExternalLinkage, Constant::getNullValue(ATy),
                     "BlockPredCount");
             Constant * Inc = ConstantInt::get(Type::getInt32Ty(Context),1);
-            int phiinstcount = 0, continue_inst = 0;             
+            int phiinstcount = 0, continue_inst = 0;           
+            std::string mainfunc="MAIN__", skifunc="main";
+            if(M.getFunction("MAIN__")==nullptr)
+            {
+                mainfunc = "main";
+                skifunc = "";
+            }
             for(Module::iterator itefunc=M.begin(),endfunc=M.end();itefunc!=endfunc;++itefunc)
             {
                 Function &f = *itefunc;
-                if(f.getName()=="main") continue;
+                if(f.getName()==skifunc) continue;
                 if(f.isDeclaration()) continue;
                 for(Function::iterator itebb=f.begin(),endbb=f.end();itebb!=endbb;++itebb)
                 {
@@ -73,7 +79,7 @@ namespace{
                     bool hasinserted = false;                    
 
 
-                    if(std::string(f.getName())=="MAIN__" && 
+                    if(std::string(f.getName())==mainfunc && 
                        std::string(last->getOpcodeName())=="ret")
                     {
                         Constant *FuncEntry = M.getOrInsertFunction("outinfo_bbcount",Type::getVoidTy(Context),NULL,NULL);
