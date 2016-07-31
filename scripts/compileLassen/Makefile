@@ -32,9 +32,11 @@ BC_OBJECTS = $(SOURCES:.cxx=.bc)
 lassenmpi.bbcounto: lassenmpi.bbcountbc
 	llc-3.5 -filetype=obj lassenmpi.bbcountbc -o lassenmpi.bbcounto
 lassenmpi.bbcountbc: lassenmpi.bc
-	opt-3.5 -load ./libMemoryModel.so -BBCount lassenmpi.bc -o lassenmpi.bbcountbc
+	opt-3.5 -load ./libMemoryModel.so -BBCount lassenmpi.bc -o lassenmpi.bbcountbc.temp
+	llvm-link-3.5 lassenmpi.bbcountbc.temp ./setup/getbbtime.bc -o lassenmpi.bbcountbc
+	rm lassenmpi.bbcountbc.temp
 lassenmpi.bc: $(BC_OBJECTS)
-	llvm-link-3.5 $(BC_OBJECTS) getbbtime.bc -o lassenmpi.bc
+	llvm-link-3.5 $(BC_OBJECTS) -o lassenmpi.bc
 lassenmpi.o: lassenmpi.bc
 	llc-3.5 -filetype=obj lassenmpi.bc -o lassenmpi.o
 #lassenMPI.o: lassenMPI.cxx 
@@ -48,6 +50,6 @@ lassen_mpi: lassenmpi.o
 lassen_mpibbcount: lassenmpi.bbcounto
 	$(MPICXX) lassenmpi.bbcounto -L. -lfrontmpi -lfront $(SILO_LIB) -o lassen_mpibbcount
 clean:
-	rm -f *.o lib*.a *.decl.h *.def.h lassen_serial lassen_charm lassen_mpi lassen_charmmpi
+	rm -f *.o lib*.a *.decl.h *.def.h *.bc *.bbcount* lassen_serial lassen_charm lassen_mpi lassen_charmmpi
 veryclean: clean
 	rm -f *.silo *.core *~ *.btr *.TVD.v3breakpoints charmrun

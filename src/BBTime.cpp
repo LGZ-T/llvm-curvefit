@@ -14,6 +14,7 @@
 #include <llvm/Analysis/LoopPass.h>
 using namespace llvm;
 
+#define NUMBLOCKS 10000
 namespace{
     struct BBTime:public ModulePass{
         static char ID;
@@ -40,6 +41,7 @@ namespace{
         static void insertgetcyclecall(Function *getcycle, unsigned bbid, 
                         GlobalVariable *cyclearray, IRBuilder<>& Builder, bool isfirst)
         {
+            if(bbid >= NUMBLOCKS) errs() << "##############\nexcede the max\n##########\n";
             static CallInst *cycle1, *cycle2;
             if(isfirst)
             {
@@ -78,11 +80,10 @@ namespace{
                 }
             }*/
             uint64_t bbid = -1;
-            unsigned NumBlocks = 2000;
             LLVMContext &Context = M.getContext();
             IRBuilder<> Builder(Context);
 
-            Type* ATy = ArrayType::get(Type::getInt64Ty(Context),NumBlocks);
+            Type* ATy = ArrayType::get(Type::getInt64Ty(Context),NUMBLOCKS);
 
             //this will not insert a definition in the file
             GlobalVariable* CountArray = new GlobalVariable(M, ATy, false,

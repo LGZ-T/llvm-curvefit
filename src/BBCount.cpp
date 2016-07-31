@@ -13,6 +13,7 @@
 
 using namespace llvm;
 
+#define NUMBLOCKS 10000
 namespace{
     struct BBCount:public ModulePass{
         static char ID;
@@ -21,6 +22,7 @@ namespace{
         static void IncrementBlockCounters(llvm::Value* Inc, unsigned Index, 
                              GlobalVariable* Counters, IRBuilder<>& Builder)
         {
+            if(Index>=NUMBLOCKS) errs() << "################\nexcede the max\n###############\n";
             LLVMContext &Context = Inc->getContext();
             std::vector<Constant*> Indices(2);
             Indices[0] = Constant::getNullValue(Type::getInt32Ty(Context));
@@ -37,11 +39,10 @@ namespace{
         bool runOnModule(Module &M) override
         {
             uint64_t bbid = -1;
-            unsigned NumBlocks = 2000;
             LLVMContext &Context = M.getContext();
             IRBuilder<> Builder(Context);
             
-            Type* ATy = ArrayType::get(Type::getInt64Ty(M.getContext()),NumBlocks);
+            Type* ATy = ArrayType::get(Type::getInt64Ty(M.getContext()),NUMBLOCKS);
             
             //this will not insert a definition in the file
             GlobalVariable* Counters = new GlobalVariable(M, ATy, false,
