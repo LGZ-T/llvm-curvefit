@@ -6,7 +6,7 @@
 #include <time.h>
 
 #define CPUT 0.37037
-#define MAXBB 2000
+#define MAXBB 20000
 #define FIRST 10
 typedef unsigned long long ulonglong;
 
@@ -62,8 +62,14 @@ void getBBTime2(ulonglong bbid)
     bbtime[bbid] = ((bbcount[bbid]-1)*bbtime[bbid]+cycle2)/bbcount[bbid];
 }*/
 
-ulonglong BlockPredCount[MAXBB];
-ulonglong BlockPredCycle[MAXBB];
+extern "C"
+{
+    extern ulonglong BlockPredCount[MAXBB];
+    extern ulonglong BlockPredCycle[MAXBB];
+    void outinfo_bbtime();
+    void outinfo_bbcount();
+}
+
 void outinfo_bbtime()
 {
     char outstring[150];

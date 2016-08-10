@@ -14,7 +14,7 @@
 #include <llvm/Analysis/LoopPass.h>
 using namespace llvm;
 
-#define NUMBLOCKS 10000
+#define NUMBLOCKS 20000
 namespace{
     struct BBTime:public ModulePass{
         static char ID;

@@ -13,7 +13,7 @@
 
 using namespace llvm;
 
-#define NUMBLOCKS 10000
+#define NUMBLOCKS 20000
 namespace{
     struct BBCount:public ModulePass{
         static char ID;
@@ -48,6 +48,9 @@ namespace{
             GlobalVariable* Counters = new GlobalVariable(M, ATy, false,
                     GlobalVariable::ExternalLinkage, Constant::getNullValue(ATy),
                     "BlockPredCount");
+            GlobalVariable* Cycle = new GlobalVariable(M, ATy, false,
+                    GlobalVariable::ExternalLinkage, Constant::getNullValue(ATy),
+                    "BlockPredCycle");
             Constant * Inc = ConstantInt::get(Type::getInt32Ty(Context),1);
             int phiinstcount = 0, continue_inst = 0;           
             std::string mainfunc="MAIN__", skifunc="main";
@@ -84,6 +87,7 @@ namespace{
                        std::string(last->getOpcodeName())=="ret")
                     {
                         Constant *FuncEntry = M.getOrInsertFunction("outinfo_bbcount",Type::getVoidTy(Context),NULL,NULL);
+                        Constant *FuncEntry1 = M.getOrInsertFunction("outinfo_bbtime",Type::getVoidTy(Context),NULL,NULL);
                         CallInst::Create(FuncEntry,"",last);
                     }
                     if(first==last) continue;
