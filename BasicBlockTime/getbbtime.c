@@ -62,14 +62,15 @@ void getBBTime2(ulonglong bbid)
     bbtime[bbid] = ((bbcount[bbid]-1)*bbtime[bbid]+cycle2)/bbcount[bbid];
 }*/
 
-extern "C"
+/*extern "C"
 {
     extern ulonglong BlockPredCount[MAXBB];
     extern ulonglong BlockPredCycle[MAXBB];
     void outinfo_bbtime();
     void outinfo_bbcount();
-}
-
+}*/
+extern ulonglong BlockPredCount[MAXBB];
+extern ulonglong BlockPredCycle[MAXBB];
 void outinfo_bbtime()
 {
     char outstring[150];
